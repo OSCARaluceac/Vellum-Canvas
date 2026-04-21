@@ -12,14 +12,14 @@ import {
   User, Settings, Trash2, BookOpen, Eye,
   Save, Home, ShoppingBag, Plus, Check,
   Dices, Edit2, ChevronUp, Target, Package,
-  ArrowLeftRight, Gift, PenLine, X, ChevronDown, Star, FileText
+  ArrowLeftRight, Gift, PenLine, X, ChevronDown, Star, FileText, ShoppingCart, Scroll,Minus 
 } from 'lucide-react';
 import { supabase } from './supabase';
 
 // ─── TIPOS ────────────────────────────────────────────────────────────────────
 
 interface Player {
-  id: string; name: string; avatar_color: string; hp: number; gold: number;
+  id: string; name: string; avatar_color: string; hp: number; max_hp: number; gold: number;
   image_url?: string; bio?: string;
 }
 interface PlayerView {
@@ -53,7 +53,7 @@ interface InventoryItem {
 }
 interface Entity {
   id: string; name: string; type: string; hp: number; max_hp: number;
-  notes?: string; image_url?: string;
+  notes?: string; image_url?: string; description?: string;
 }
 interface MapToken {
   id: string; map_id: string; entity_id?: string; name: string; type: string;
@@ -266,12 +266,20 @@ function useMapTokens(mapId: string | null) {
 
 // ─── SEEDER DE ITEMS DE MUESTRA ───────────────────────────────────────────────
 
-async function seedSampleItems() {
-  const { data: existing } = await (supabase.from('shop_items') as any).select('id').limit(1);
-  if (existing && existing.length > 0) return;
-  await (supabase.from('shop_items') as any).insert(SAMPLE_ITEMS);
-}
+// ─── SEEDER DE ITEMS DE MUESTRA ───────────────────────────────────────────────
 
+async function seedSampleItems() {
+  try {
+    const { data: existing } = await (supabase.from('shop_items') as any)
+      .select('id').limit(1);
+    if (existing && existing.length > 0) return; // Ya hay items, no duplicar
+    for (const item of SAMPLE_ITEMS) {
+      await (supabase.from('shop_items') as any).insert([item]);
+    }
+  } catch (e) {
+    console.warn('seedSampleItems:', e);
+  }
+}
 // ─── LAYOUT PRINCIPAL ─────────────────────────────────────────────────────────
 
 function VellumLayout() {
@@ -283,7 +291,9 @@ function VellumLayout() {
   const [playerView, setPlayerView] = useState<PlayerView | null>(null);
   const isHome = location.pathname === '/';
 
-  useEffect(() => { seedSampleItems(); }, []);
+  useEffect(() => { 
+    seedSampleItems();
+  }, []);
 
   useEffect(() => {
     if (!isDM && selectedPlayerId) {
@@ -360,7 +370,7 @@ function VellumLayout() {
           {isDM && <>
             <Route path="/tactical" element={<TacticalMapModule players={players} entities={entities} broadcastToPlayer={broadcastToPlayer} broadcastToAll={broadcastToAll} />} />
             <Route path="/scenes" element={<ScenesModule players={players} broadcastToPlayer={broadcastToPlayer} broadcastToAll={broadcastToAll} />} />
-            <Route path="/bestiary" element={<BestiaryModule entities={entities} setEntities={setEntities} />} />
+            <Route path="/bestiary" element={<BestiaryModule />} />
             <Route path="/shop" element={<ShopManagerModule players={players} />} />
             <Route path="/manuals" element={<PDFReaderModule />} />
           </>}
@@ -530,7 +540,7 @@ function MapWithTokens({
           <div
             key={hs.id}
             style={{ left: `${hs.x}%`, top: `${hs.y}%`, position: 'absolute', transform: 'translate(-50%,-50%)' }}
-            className="z-20 group cursor-pointer"
+            className="z-[100] group cursor-pointer"
             onClick={(e) => { e.stopPropagation(); if (onHotspotClick) onHotspotClick(hs); }}
           >
             <div className={`w-4 h-4 rotate-45 border-2 shadow-lg transition-all hover:scale-125
@@ -672,7 +682,141 @@ function PlayerSelector({ players, selectedId, onSelect }: {
     </div>
   );
 }
+function EditCharacterInventory({ playerId }: { playerId: string }) {
+  // 1. Cargar el inventario específico del operativo
+  const { inventory, setInventory } = useInventory(playerId);
 
+  // 🛡️ Ajustar cantidad (Sincronización con Supabase)
+  const updateQuantity = async (id: string, newQty: number) => {
+    if (newQty < 1) return;
+    const { error } = await supabase.from('player_inventory').update({ quantity: newQty }).eq('id', id);
+    if (!error) {
+      setInventory(prev => prev.map(i => i.id === id ? { ...i, quantity: newQty } : i));
+    }
+  };
+
+  // 🛡️ Eliminar objeto (Incautación)
+  const removeItem = async (id: string) => {
+    const { error } = await supabase.from('player_inventory').delete().eq('id', id);
+    if (!error) {
+      setInventory(prev => prev.filter(i => i.id !== id));
+    }
+  };
+
+  return (
+    <div className="mt-6 border-t border-[#C5A059]/20 pt-4">
+      <h4 className="text-[10px] font-black uppercase text-[#C5A059] tracking-[0.2em] mb-4 flex items-center gap-2">
+        <Package size={14} /> Gestión de Suministros del Operativo
+      </h4>
+
+      <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+        {inventory.length > 0 ? inventory.map(item => (
+          <div key={item.id} className="flex items-center justify-between bg-black/40 border border-white/5 p-3 group">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">{item.shop_items?.icon || '📦'}</span>
+              <div>
+                <p className="text-[9px] font-bold text-white uppercase">{item.shop_items?.name}</p>
+                <p className="text-[7px] text-[#C5A059]/60 uppercase tracking-widest">ID: {item.item_id.slice(0,8)}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Selector de Cantidad */}
+              <div className="flex items-center border border-[#C5A059]/30 bg-[#1C1008]">
+                <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="px-2 text-[#C5A059] hover:bg-[#C5A059] hover:text-black transition-colors">-</button>
+                <span className="px-3 text-[10px] font-mono border-x border-[#C5A059]/30">{item.quantity}</span>
+                <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="px-2 text-[#C5A059] hover:bg-[#C5A059] hover:text-black transition-colors">+</button>
+              </div>
+
+              {/* Botón de Eliminación */}
+              <button 
+                onClick={() => removeItem(item.id)}
+                className="text-white/20 hover:text-red-500 transition-colors"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </div>
+        )) : (
+          <div className="text-center py-6 border border-dashed border-white/10 opacity-20">
+            <p className="text-[8px] uppercase tracking-widest font-black">Sin pertenencias registradas</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DMInventoryInspector({ playerId, playerName }: { playerId: string, playerName: string }) {
+  const { inventory, setInventory } = useInventory(playerId);
+  const [isAdding, setIsAdding] = useState(false);
+
+  // 🛡️ Ajuste de Existencias (Sincronización instantánea)
+  const updateQty = async (id: string, newQty: number) => {
+    if (newQty < 0) return;
+    const { error } = await supabase.from('player_inventory').update({ quantity: newQty }).eq('id', id);
+    if (!error) setInventory(prev => prev.map(i => i.id === id ? { ...i, quantity: newQty } : i));
+  };
+
+  // 🛡️ Incautación de Equipo
+  const deleteItem = async (id: string) => {
+    const { error } = await supabase.from('player_inventory').delete().eq('id', id);
+    if (!error) setInventory(prev => prev.filter(i => i.id !== id));
+  };
+
+  return (
+    <div className="bg-[#1C1008]/50 border border-[#C5A059]/20 p-4 rounded-sm animate-in fade-in duration-300">
+      <header className="flex justify-between items-center mb-4 border-b border-[#C5A059]/10 pb-2">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-[#C5A059] rounded-full animate-pulse" />
+          <h4 className="text-[10px] font-black uppercase text-[#C5A059] tracking-widest">
+            Inventario: {playerName}
+          </h4>
+        </div>
+        <span className="text-[8px] opacity-40 font-mono">ID: {playerId.slice(0, 6)}</span>
+      </header>
+
+      <div className="space-y-1.5 max-h-64 overflow-y-auto custom-scrollbar">
+        {inventory.length > 0 ? inventory.map(item => (
+          <div key={item.id} className="flex items-center justify-between bg-black/40 p-2 border border-white/5 group hover:border-[#C5A059]/30 transition-all">
+            <div className="flex items-center gap-3">
+              <span className="text-lg">{item.shop_items?.icon || '📦'}</span>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-bold text-white uppercase leading-none">{item.shop_items?.name}</span>
+                <span className="text-[7px] text-[#C5A059]/50 font-mono">QTY: {item.quantity}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button 
+                onClick={() => updateQty(item.id, item.quantity - 1)}
+                className="w-5 h-5 flex items-center justify-center bg-[#2D1B14] border border-[#C5A059]/30 text-[#C5A059] hover:bg-[#C5A059] hover:text-black transition-all"
+              >
+                <Minus size={10} />
+              </button>
+              <button 
+                onClick={() => updateQty(item.id, item.quantity + 1)}
+                className="w-5 h-5 flex items-center justify-center bg-[#2D1B14] border border-[#C5A059]/30 text-[#C5A059] hover:bg-[#C5A059] hover:text-black transition-all"
+              >
+                <Plus size={10} />
+              </button>
+              <button 
+                onClick={() => deleteItem(item.id)}
+                className="ml-2 text-red-500/50 hover:text-red-500 p-1"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
+          </div>
+        )) : (
+          <div className="py-8 text-center border border-dashed border-white/5 opacity-20">
+            <p className="text-[8px] uppercase tracking-[0.3em]">Celdas de carga vacías</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 // ─── VISTA DEL JUGADOR ────────────────────────────────────────────────────────
 
 function PlayerView({ playerId, view, players, setPlayers }: {
@@ -687,7 +831,7 @@ function PlayerView({ playerId, view, players, setPlayers }: {
   // 🛡️ SINCRONIZACIÓN TÁCTICA: Hook de tokens con acceso a setTokens
   const { tokens, setTokens } = useMapTokens(view?.data?.map_id ?? view?.data?.id ?? null);
 
-  // Niko: Este efecto fuerza la actualización inmediata al recibir la señal de sincronización
+
   useEffect(() => {
     if (view?.mode === 'MAP' && view.data?.tokens) {
       setTokens(view.data.tokens);
@@ -697,7 +841,7 @@ function PlayerView({ playerId, view, players, setPlayers }: {
   const { inventory, setInventory } = useInventory(playerId);
   const [bio, setBio] = useState<BiographyEntry[]>([]);
   const [buyFeedback, setBuyFeedback] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'map' | 'inv' | 'bio' | 'shop'>('map');
+  const [activeTab, setActiveTab] = useState<'inv' | 'bio'>('inv');
   const [lastRoll, setLastRoll] = useState<number | null>(null);
   const [bioInput, setBioInput] = useState('');
   
@@ -721,23 +865,66 @@ function PlayerView({ playerId, view, players, setPlayers }: {
 
   const handleBuy = async (item: ShopItem) => {
     if (!player || player.gold < item.price) {
-      setBuyFeedback('❌ Oro insuficiente');
+      setBuyFeedback('❌ Fondos insuficientes');
       setTimeout(() => setBuyFeedback(null), 2000);
       return;
     }
-    await (supabase.from('players') as any).update({ gold: player.gold - item.price }).eq('id', playerId);
-    setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, gold: p.gold - item.price } : p));
-    const ex = inventory.find(i => i.item_id === item.id);
-    if (ex) {
-      await (supabase.from('player_inventory') as any).update({ quantity: ex.quantity + 1 }).eq('id', ex.id);
-    } else {
-      const { data } = await (supabase.from('player_inventory') as any)
-        .insert([{ player_id: playerId, item_id: item.id, quantity: 1 }])
-        .select('*, shop_items(*)');
-      if (data) setInventory(prev => [...prev, data[0]]);
+  
+    // 1. Sincronización de Oro
+    const nuevoOro = player.gold - item.price;
+    const { error: errorOro } = await supabase
+      .from('players')
+      .update({ gold: nuevoOro })
+      .eq('id', playerId);
+  
+    if (errorOro) {
+      console.error("Fallo al guardar dinero:", errorOro.message);
+      setBuyFeedback('⚠️ Error de servidor: Oro no guardado');
+      return;
     }
-    setBuyFeedback(`✅ ¡${item.name} comprado!`);
-    setTimeout(() => setBuyFeedback(null), 2000);
+  
+
+    setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, gold: nuevoOro } : p));
+  
+    // 2. Sincronización de Inventario (Códice de Objetos)
+    const itemExistente = inventory.find(i => i.item_id === item.id);
+  
+    try {
+      if (itemExistente) {
+        // Actualizar cantidad si ya lo tiene
+        const nuevaCantidad = itemExistente.quantity + 1;
+        const { error: errorUpd } = await supabase
+          .from('player_inventory')
+          .update({ quantity: nuevaCantidad })
+          .eq('id', itemExistente.id);
+  
+        if (errorUpd) throw errorUpd;
+  
+        setInventory(prev => prev.map(i => 
+          i.id === itemExistente.id ? { ...i, quantity: nuevaCantidad } : i
+        ));
+      } else {
+        // Insertar nuevo objeto
+        const { data, error: errorIns } = await supabase
+          .from('player_inventory')
+          .insert([{ 
+            player_id: playerId, 
+            item_id: item.id, 
+            quantity: 1 
+          }])
+          .select('*, shop_items(*)');
+  
+        if (errorIns) throw errorIns;
+        if (data) setInventory(prev => [...prev, data[0]]);
+      }
+      
+      setBuyFeedback(`✅ Adquisición confirmada: ${item.name}`);
+    } catch (err: any) {
+      console.error("Fallo al guardar inventario:", err.message);
+      setBuyFeedback('⚠️ Error de servidor: Objeto no guardado');
+    } finally {
+      setTimeout(() => setBuyFeedback(null), 2000);
+    }
   };
 
   const handleSell = async (inv: InventoryItem) => {
@@ -770,23 +957,37 @@ function PlayerView({ playerId, view, players, setPlayers }: {
     setLastRoll(r);
   };
 
-  const handleHotspotClick = async (hs: Hotspot | SceneHotspot) => {
+  const handleHotspotClick = async (hs: any) => {
     if (!playerId) return;
-    if (hs.label) {
-      await (supabase.from('chat_messages') as any).insert([{
-        author: player?.name ?? 'Jugador',
-        content: `intenta cruzar el portal: "${hs.label}"`,
-        type: 'system'
-      }]);
+
+    if (hs.type === 'map' && hs.targetMapId) {
+      const target = maps.find(m => m.id === hs.targetMapId);
+      if (target) {
+        // El jugador se mueve a sí mismo (localmente)
+        // En una versión más avanzada, esto podría pedir permiso al DM
+        console.log("El operativo solicita tránsito...");
+      }
     }
+
+    // Registramos el intento de cruce en el chat para tu supervisión
+    await supabase.from('chat_messages').insert([{
+      author: player?.name ?? 'Jugador',
+      content: `ha cruzado el portal hacia: "${hs.label}"`,
+      type: 'system'
+    }]);
   };
 
   const mode = view?.mode ?? 'MAP';
   const data = view?.data ?? {};
-  const visibleShopItems = mode === 'SHOP'
-    ? (data.shopItemIds?.length ? shopItems.filter(i => data.shopItemIds.includes(i.id)) : shopItems)
-    : [];
-  const showShop = mode === 'SHOP';
+  // Ahora los objetos de la tienda se cargan siempre para estar listos.
+  const visibleShopItems = shopItems.filter(item => {
+    // Si el modo es SHOP, podemos filtrar por IDs específicos enviados por el DM
+    if (view?.mode === 'SHOP' && view.data?.shopItemIds?.length) {
+      return view.data.shopItemIds.includes(item.id);
+    }
+    // En SCENE o MAP, mostramos el catálogo general
+    return true; 
+  });
 
   return (
     <div className="flex h-full w-full animate-in fade-in duration-500 bg-[#0D0704]">
@@ -819,13 +1020,13 @@ function PlayerView({ playerId, view, players, setPlayers }: {
 
         {/* Tabs Navegación Lateral */}
         <div className="flex border-b border-[#C5A059]/10 flex-shrink-0">
-          {([['inv', Package], ['bio', PenLine], ['shop', ShoppingBag]] as const).map(([tab, Icon]) => (
+          {([['inv', Package], ['bio', PenLine]] as const).map(([tab, Icon]) => (
             <button key={tab} onClick={() => setActiveTab(tab as any)}
               className={`flex-1 py-2 flex flex-col items-center gap-0.5 transition-all ${
                 activeTab === tab ? 'text-[#C5A059] bg-[#C5A059]/10' : 'text-white/30 hover:text-white/60'
               }`}>
               <Icon size={12} />
-              <span className="text-[7px] font-black uppercase">{tab === 'inv' ? 'Inv' : tab === 'bio' ? 'Bio' : 'Tienda'}</span>
+              <span className="text-[7px] font-black uppercase">{tab === 'inv' ? 'Inv' : 'Bio'}</span>
             </button>
           ))}
         </div>
@@ -848,26 +1049,66 @@ function PlayerView({ playerId, view, players, setPlayers }: {
           )}
           {/* ... [Resto de lógica de Bio y Shop se mantiene intacta] ... */}
           {activeTab === 'bio' && <div className="p-3">...</div>}
-          {activeTab === 'shop' && <div className="p-3">...</div>}
+          {/* shop moved to center overlay; sidebar contains only Inv/Bio */}
         </div>
       </aside>
 
       {/* ÁREA CENTRAL: MAPA O ESCENA CON SINCRONIZACIÓN FORZOSA */}
       <main className="flex-1 relative overflow-hidden">
-        {mode === 'MAP' && (
-          <MapWithTokens
-            map={{
-              image_url: data.image_url,
-              hotspots: data.hotspots || []
-            }}
-            tokens={tokens}
-            isDM={false} 
-            onHotspotClick={(hs) => handleHotspotClick(hs)}
-          />
-        )}
+      {mode === 'MAP' && (
+  <MapWithTokens
+    map={{
+      image_url: data.image_url,
+      hotspots: Array.isArray(data.hotspots) ? data.hotspots : [],
+    }}
+    tokens={tokens}
+    isDM={false}
+    onHotspotClick={(hs) => handleHotspotClick(hs)}
+  />
+)}
 
         {mode === 'SCENE' && (
           <SceneView sceneData={data} onHotspotClick={handleHotspotClick} maps={maps} />
+        )}
+
+        {/* 🛒 Ventana de Tienda: aparece como overlay cuando el DM activa el modo SHOP */}
+        {view?.mode === 'SHOP' && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="w-full max-w-2xl h-[70%] bg-[#1C1008]/95 border-2 border-[#C5A059]/40 shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden">
+              <header className="p-4 border-b border-[#C5A059]/20 flex justify-between items-center bg-[#C5A059]/5">
+                <div>
+                  <h3 className="font-title text-[#C5A059] text-sm font-black uppercase italic tracking-tighter">Terminal de Suministros</h3>
+                  <p className="text-[8px] text-white/40 uppercase tracking-[0.2em]">Adquisición de equipo táctico</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[8px] uppercase opacity-40 font-black">Fondos Disponibles</p>
+                  <p className="text-[#C5A059] font-title font-bold">🪙 {player?.gold ?? 0}</p>
+                </div>
+              </header>
+
+              <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-4 custom-scrollbar">
+                {shopItems.filter(item => !view.data?.shopItemIds || view.data.shopItemIds.includes(item.id)).map(item => (
+                  <div key={item.id} className="bg-black/40 border border-white/5 p-4 flex items-center gap-4 group hover:border-[#C5A059]/50 transition-all">
+                    <span className="text-3xl filter drop-shadow-[0_0_8px_rgba(197,160,89,0.3)]">{item.icon || '📦'}</span>
+                    <div className="flex-1">
+                      <p className="text-[10px] font-bold text-white uppercase tracking-tight">{item.name}</p>
+                      <p className="text-[9px] text-[#C5A059] font-mono mt-1 italic">🪙 {item.price}</p>
+                    </div>
+                    <button 
+                      onClick={() => handleBuy(item)}
+                      className="bg-[#C5A059] text-black p-2 hover:bg-white transition-all shadow-lg"
+                    >
+                      <ShoppingCart size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <footer className="p-3 bg-black/40 text-center">
+                <p className="text-[7px] uppercase tracking-[0.4em] opacity-20">Sincronización de Códice con Supabase v.3.0</p>
+              </footer>
+            </div>
+          </div>
         )}
 
         {buyFeedback && (
@@ -1028,7 +1269,7 @@ function LibraryModule() {
 }
 
 function PlayerDashboard({ player: initialPlayer, view }: { player: Player; view: PlayerView | null }) {
-  // Niko, usamos un estado local para que la vida y el oro se actualicen sin recargar
+//Usamos un estado local para que la vida y el oro se actualicen sin recargar
   const [playerData, setPlayerData] = useState(initialPlayer);
   const [localTokens, setLocalTokens] = useState<MapToken[]>([]);
 
@@ -1100,10 +1341,10 @@ function PlayerDashboard({ player: initialPlayer, view }: { player: Player; view
               <div className="w-40 h-1.5 bg-black rounded-full overflow-hidden border border-white/5">
                 <div 
                   className="h-full bg-gradient-to-r from-red-800 to-red-500 transition-all duration-700 ease-out" 
-                  style={{ width: `${Math.max(0, Math.min(playerData.hp, 100))}%` }} 
+                  style={{ width: `${Math.max(0, Math.min((playerData.hp / playerData.max_hp) * 100, 100))}%` }} 
                 />
               </div>
-              <span className="font-mono text-red-500 font-black text-sm w-8">{playerData.hp}</span>
+              <span className="font-mono text-red-500 font-black text-sm w-8">{playerData.hp}<span className="text-[8px] opacity-30">/{playerData.max_hp}</span></span>
             </div>
           </div>
           <div className="text-right border-l border-white/10 pl-8">
@@ -1166,13 +1407,21 @@ function MasterDashboard({ players, setPlayers }: {
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState('#C5A059');
+  const [inspectingId, setInspectingId] = useState<string | null>(null);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
 
   const createPlayer = async () => {
     if (!newName.trim()) return;
     const { data } = await (supabase.from('players') as any)
-      .insert([{ name: newName.trim(), avatar_color: newColor, hp: 100, gold: 50 }])
+      .insert([{ 
+        name: newName.trim(), 
+        avatar_color: newColor, 
+        hp: 100, 
+        max_hp: 100, // 
+        gold: 50 
+      }])
       .select();
+    
     if (data) {
       setPlayers(prev => [...prev, data[0]]);
       await (supabase.from('player_views') as any)
@@ -1244,28 +1493,36 @@ function MasterDashboard({ players, setPlayers }: {
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {players.map(p => (
-              <div key={p.id}
-                className="flex items-center gap-3 bg-[#1C1008] border border-white/5 p-3 hover:border-[#C5A059]/25 transition-all group">
-                {p.image_url ? (
-                  <img src={p.image_url} className="w-10 h-10 rounded-full object-cover border-2 flex-shrink-0" style={{ borderColor: p.avatar_color }} alt={p.name} />
-                ) : (
-                  <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold text-sm flex-shrink-0 font-title"
-                    style={{ borderColor: p.avatar_color, color: p.avatar_color }}>
-                    {p.name.charAt(0).toUpperCase()}
+              <div key={p.id} className="space-y-2">
+                <div
+                  className="flex items-center gap-3 bg-[#1C1008] border border-white/5 p-3 hover:border-[#C5A059]/25 transition-all group">
+                  {p.image_url ? (
+                    <img src={p.image_url} className="w-10 h-10 rounded-full object-cover border-2 flex-shrink-0" style={{ borderColor: p.avatar_color }} alt={p.name} />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold text-sm flex-shrink-0 font-title"
+                      style={{ borderColor: p.avatar_color, color: p.avatar_color }}>
+                      {p.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold font-title truncate">{p.name}</p>
+                    <p className="text-[9px] opacity-40">❤️{p.hp} &nbsp; 🪙{p.gold}</p>
                   </div>
+                  <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <button onClick={() => setInspectingId(p.id === inspectingId ? null : p.id)} className="text-[#C5A059]/60 hover:text-[#C5A059] p-0.5" title="Ver Inventario">
+                      <Package size={12} />
+                    </button>
+                    <button onClick={() => setEditingPlayer({ ...p })} className="text-[#C5A059]/60 hover:text-[#C5A059] p-0.5">
+                      <Edit2 size={12} />
+                    </button>
+                    <button onClick={() => deletePlayer(p.id)} className="text-red-500/50 hover:text-red-500 p-0.5">
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+                {inspectingId === p.id && (
+                  <div className="col-span-1"><DMInventoryInspector playerId={p.id} playerName={p.name} /></div>
                 )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold font-title truncate">{p.name}</p>
-                  <p className="text-[9px] opacity-40">❤️{p.hp} &nbsp; 🪙{p.gold}</p>
-                </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                  <button onClick={() => setEditingPlayer({ ...p })} className="text-[#C5A059]/60 hover:text-[#C5A059] p-0.5">
-                    <Edit2 size={12} />
-                  </button>
-                  <button onClick={() => deletePlayer(p.id)} className="text-red-500/50 hover:text-red-500 p-0.5">
-                    <Trash2 size={12} />
-                  </button>
-                </div>
               </div>
             ))}
             {!players.length && <p className="col-span-3 text-center opacity-25 italic text-xs py-6 font-serif">Sin personajes todavía.</p>}
@@ -1297,11 +1554,15 @@ function MasterDashboard({ players, setPlayers }: {
                 </div>
               ))}
               <div className="flex gap-2">
-                {[{ label: 'HP', key: 'hp' }, { label: 'Oro', key: 'gold' }].map(({ label, key }) => (
+                {[
+                  { label: 'HP Actual', key: 'hp' },
+                  { label: 'HP Máximo', key: 'max_hp' },
+                  { label: 'Oro', key: 'gold' }
+                ].map(({ label, key }) => (
                   <div key={key} className="flex-1">
                     <label className="text-[9px] uppercase font-black text-[#C5A059] mb-1 block">{label}</label>
                     <input type="number" value={(editingPlayer as any)[key]}
-                      onChange={e => setEditingPlayer({ ...editingPlayer, [key]: +e.target.value })}
+                      onChange={e => setEditingPlayer({ ...editingPlayer!, [key]: +e.target.value })}
                       className="w-full bg-[#1C1008] border border-white/10 p-2 text-xs outline-none focus:border-[#C5A059]" />
                   </div>
                 ))}
@@ -1462,21 +1723,49 @@ function TacticalMapModule({ players, entities, broadcastToPlayer, broadcastToAl
     setHotspotForm({ label: '', targetMapId: '', targetSceneId: '', type: 'map' });
   };
 
-  const handleHotspotClick = (hs: any) => {
+  const handleHotspotClick = async (hs: any) => {
     if (activeTool === 'HOTSPOT') {
-      const updated = { ...currentMap!, hotspots: (currentMap!.hotspots || []).filter((h: any) => h.id !== hs.id) };
-      supabase.from('maps').update({ hotspots: updated.hotspots }).eq('id', currentMap!.id).then(() => setCurrentMap(updated));
-    } else if (hs.type === 'map' && hs.targetMapId) {
-      const target = maps.find(m => m.id === hs.targetMapId);
-      if (target) setCurrentMap(target);
+      const updatedHotspots = (currentMap.hotspots || []).filter((h: any) => h.id !== hs.id);
+      const { error } = await supabase.from('maps').update({ hotspots: updatedHotspots }).eq('id', currentMap.id);
+      if (!error) setCurrentMap({ ...currentMap, hotspots: updatedHotspots });
+      return;
+    }
+  
+    if (hs.type === 'map' && hs.targetMapId) {
+      // Recargamos el mapa destino fresco de Supabase para tener sus hotspots actuales
+      const { data: freshMap } = await (supabase.from('maps') as any)
+        .select('*').eq('id', hs.targetMapId).single();
+      if (freshMap) {
+        setCurrentMap(freshMap);
+        await broadcastToAll('MAP', {
+          map_id: freshMap.id,
+          image_url: freshMap.image_url,
+          hotspots: freshMap.hotspots ?? [],
+          name: freshMap.name,
+        });
+      }
+    } else if (hs.type === 'scene' && hs.targetSceneId) {
+      const { data: freshScene } = await (supabase.from('scenes') as any)
+        .select('*').eq('id', hs.targetSceneId).single();
+      if (freshScene) {
+        await broadcastToAll('SCENE', freshScene);
+      }
     }
   };
 
   const sendMap = async () => {
     if (!currentMap) return;
-    const viewData = { map_id: currentMap.id, image_url: currentMap.image_url, hotspots: currentMap.hotspots || [], tokens };
-    if (selectedPlayerIds.size > 0) selectedPlayerIds.forEach(id => broadcastToPlayer(id, 'MAP', viewData));
-    else broadcastToAll('MAP', viewData);
+    const viewData = {
+      map_id: currentMap.id,
+      image_url: currentMap.image_url,
+      hotspots: currentMap.hotspots ?? [],  // ← nunca null
+      tokens,
+    };
+    if (selectedPlayerIds.size > 0) {
+      selectedPlayerIds.forEach(id => broadcastToPlayer(id, 'MAP', viewData));
+    } else {
+      broadcastToAll('MAP', viewData);
+    }
   };
 
   return (
@@ -1942,118 +2231,191 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
 
 // ─── MÓDULO CÓDICE ────────────────────────────────────────────────────────────
 
-function BestiaryModule({ entities, setEntities }: { entities: Entity[]; setEntities: any }) {
-  const [form, setForm] = useState({ name: '', type: 'NPC', hp: 100, notes: '', image_url: '' });
-  const [isLoading, setIsLoading] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'NPC' | 'Enemigo'>('all');
+function BestiaryModule() {
+  //  Asegúrar de que useSupabaseTable devuelva el setter (setEntities)
+  const [entities, setEntities] = useSupabaseTable<Entity>('entities', 'name');
+  const [editingEntity, setEditingEntity] = useState<Partial<Entity> | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleInvoke = async () => {
-    if (!form.name.trim()) return;
-    setIsLoading(true);
-    const { data, error } = await (supabase.from('entities') as any)
-      .insert([{ ...form, max_hp: form.hp, image_url: form.image_url || null }])
-      .select();
-    if (!error && data) {
-      setEntities([data[0], ...entities]);
-      setForm({ name: '', type: 'NPC', hp: 100, notes: '', image_url: '' });
+  // 🛡️ PROTOCOLO DE PERSISTENCIA DEFINITIVO
+  const saveEntity = async () => {
+    if (!editingEntity?.name) return;
+    setIsSaving(true);
+
+    // Paquete de datos unificado para el Códice
+    const payload = {
+      name: editingEntity.name,
+      type: editingEntity.type || 'Enemigo',
+      hp: Number(editingEntity.hp) || 100,
+      max_hp: Number(editingEntity.hp) || 100, // Sincronizamos max_hp con hp inicial
+      image_url: editingEntity.image_url || null,
+      description: editingEntity.description || ""
+    };
+
+    try {
+      if (editingEntity.id) {
+        // ACTUALIZAR REGISTRO EXISTENTE
+        const { data, error } = await supabase
+          .from('entities')
+          .update(payload)
+          .eq('id', editingEntity.id)
+          .select();
+
+        if (error) throw error;
+        if (data) {
+          setEntities(prev => prev.map(e => e.id === editingEntity.id ? data[0] : e));
+          setEditingEntity(null);
+        }
+      } else {
+        // CREAR NUEVO REGISTRO (INSERT)
+        const { data, error } = await supabase
+          .from('entities')
+          .insert([payload])
+          .select(); // CRITICO: .select() devuelve el objeto con su nueva ID
+
+        if (error) throw error;
+        if (data) {
+          setEntities(prev => [data[0], ...prev]);
+          setEditingEntity(null);
+        }
+      }
+    } catch (err: any) {
+      // Si falla, el error aparecerá aquí con detalle
+      console.error("Error en la persistencia del Códice:", err.message);
+    } finally {
+      setIsSaving(false);
     }
-    setIsLoading(false);
   };
 
-  const handleDelete = async (id: string) => {
-    await (supabase.from('entities') as any).delete().eq('id', id);
-    setEntities(entities.filter((e: Entity) => e.id !== id));
+  const deleteEntity = async (id: string) => {
+    if (!confirm("¿Eliminar registro de forma permanente?")) return;
+    setEntities(prev => prev.filter(e => e.id !== id));
+    await supabase.from('entities').delete().eq('id', id);
   };
-
-  const filtered = filter === 'all' ? entities : entities.filter(e => e.type === filter);
 
   return (
-    <div className="h-full w-full flex bg-[#1C1008] animate-in">
-      <aside style={{ width: '280px' }} className="bg-[#2D1B14] border-r border-[#C5A059]/15 p-6 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
-        <h3 className="font-title text-xl font-bold text-[#D7CCC8] border-b border-[#C5A059]/25 pb-3">Nuevo Registro</h3>
-        <div className="space-y-3">
-          {[
-            { label: 'Nombre', key: 'name', placeholder: 'Nombre del ser...' },
-            { label: 'Imagen URL', key: 'image_url', placeholder: 'https://...' },
-          ].map(({ label, key, placeholder }) => (
-            <div key={key}>
-              <label className="text-[9px] font-black uppercase text-[#C5A059] mb-1 block">{label}</label>
-              <input value={(form as any)[key]} onChange={e => setForm({ ...form, [key]: e.target.value })}
-                placeholder={placeholder}
-                className="w-full bg-[#1C1008] border-b border-[#C5A059]/30 p-2 text-white outline-none focus:border-[#C5A059] font-serif transition-all" />
-            </div>
-          ))}
-          <div>
-            <label className="text-[9px] font-black uppercase text-[#C5A059] mb-1 block">Naturaleza</label>
-            <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}
-              className="w-full bg-[#1C1008] border-b border-[#C5A059]/30 p-2 text-xs uppercase font-bold text-[#C5A059] outline-none">
-              <option value="NPC">NPC / Aliado</option>
-              <option value="Enemigo">Enemigo / Hostil</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-[9px] font-black uppercase text-[#C5A059] mb-1 block">HP</label>
-            <input type="number" value={form.hp} onChange={e => setForm({ ...form, hp: +e.target.value })}
-              className="w-full bg-[#1C1008] border-b border-[#C5A059]/30 p-2 text-white outline-none" />
-          </div>
-          <div>
-            <label className="text-[9px] font-black uppercase text-[#C5A059] mb-1 block">Notas</label>
-            <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
-              className="h-20 w-full bg-[#1C1008] border border-white/8 p-2 text-xs outline-none resize-none text-[#D7CCC8] focus:border-[#C5A059]"
-              placeholder="Habilidades, debilidades..." />
-          </div>
-          <button onClick={handleInvoke} disabled={isLoading}
-            className={`w-full bg-[#C5A059] text-[#1C1008] py-3 font-black uppercase text-[9px] tracking-widest hover:bg-white transition-all flex items-center justify-center gap-2 ${isLoading ? 'opacity-50' : ''}`}>
-            <Plus size={14} /> {isLoading ? 'Grabando...' : 'Grabar en el Códice'}
-          </button>
+    <div className="h-full flex flex-col bg-[#0D0704] text-[#D7CCC8]">
+      <header className="p-6 border-b border-[#C5A059]/20 flex justify-between items-center bg-[#1C1008] shadow-xl">
+        <div>
+          <h1 className="font-title text-2xl text-[#C5A059] tracking-tighter italic uppercase font-black">Códice de Amenazas</h1>
+          <p className="text-[10px] opacity-40 uppercase tracking-[0.3em]">Base de Datos de Entidades Tácticas</p>
         </div>
-      </aside>
+        <button 
+          onClick={() => setEditingEntity({ name: '', type: 'Enemigo', hp: 100 })}
+          className="bg-[#C5A059] text-black px-6 py-2 font-black text-xs uppercase hover:bg-white transition-all shadow-[0_0_20px_rgba(197,160,89,0.3)]"
+        >
+          + Registrar Nueva Entidad
+        </button>
+      </header>
 
-      <main className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-[#0D0704]">
-        <div className="flex justify-between items-end mb-8 border-b border-white/5 pb-5">
-          <div>
-            <h2 className="font-display text-3xl font-bold text-[#D7CCC8] italic">Códice</h2>
-            <p className="text-[#C5A059]/40 text-[9px] font-black uppercase tracking-widest mt-1">Registros Activos — {entities.length}</p>
-          </div>
-          <div className="flex gap-1">
-            {(['all', 'NPC', 'Enemigo'] as const).map(f => (
-              <button key={f} onClick={() => setFilter(f)}
-                className={`px-3 py-1 text-[8px] font-black uppercase border transition-all ${filter === f ? 'border-[#C5A059] text-[#C5A059] bg-[#C5A059]/10' : 'border-white/10 text-white/30 hover:border-white/30'}`}>
-                {f === 'all' ? 'Todos' : f}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          {filtered.map(e => (
-            <div key={e.id}
-              className="bg-[#1C1008] border border-white/5 p-5 flex gap-4 items-center hover:border-[#C5A059]/30 transition-all group relative overflow-hidden">
-              <div className={`absolute top-0 right-0 w-1 h-full ${e.type === 'Enemigo' ? 'bg-red-700' : 'bg-blue-700'}`} />
-              {e.image_url ? (
-                <img src={e.image_url} className="w-16 h-16 rounded-full object-cover border-2 flex-shrink-0"
-                  style={{ borderColor: e.type === 'Enemigo' ? '#ef4444' : '#3b82f6' }} alt={e.name} />
-              ) : (
-                <div className="w-16 h-16 rounded-full flex items-center justify-center border-2 flex-shrink-0"
-                  style={{ borderColor: e.type === 'Enemigo' ? '#ef4444' : '#3b82f6', background: e.type === 'Enemigo' ? '#450a0a' : '#0c1a3a' }}>
-                  {e.type === 'NPC' ? <User className="text-blue-400 opacity-60" size={24} /> : <Sword className="text-red-400 opacity-60" size={24} />}
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <h4 className="font-title text-lg font-bold text-[#D7CCC8] truncate">{e.name}</h4>
-                <div className="flex gap-3 mt-0.5 text-[9px] font-black text-[#C5A059]">
-                  <span>{e.type}</span>
-                  <span className="text-red-400/70">❤️ {e.hp} HP</span>
-                </div>
-                {e.notes && <p className="text-[10px] text-white/30 mt-2 italic border-t border-white/5 pt-2 line-clamp-2">{e.notes}</p>}
+      <div className="flex-1 overflow-hidden flex">
+        {/* LISTADO LATERAL */}
+        <aside className="w-80 border-r border-white/5 overflow-y-auto custom-scrollbar p-4 space-y-2 bg-black/20">
+          {entities.map(entity => (
+            <div 
+              key={entity.id}
+              onClick={() => setEditingEntity(entity)}
+              className={`p-4 border transition-all cursor-pointer relative group ${
+                editingEntity?.id === entity.id ? 'bg-[#C5A059]/10 border-[#C5A059] shadow-inner' : 'bg-black/40 border-white/5 hover:border-white/20'
+              }`}
+            >
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold font-title uppercase tracking-tight">{entity.name}</span>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); deleteEntity(entity.id); }}
+                  className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-400 transition-opacity"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
-              <button onClick={() => handleDelete(e.id)}
-                className="opacity-0 group-hover:opacity-100 text-red-500/30 hover:text-red-500 transition-all p-1">
-                <Trash2 size={18} />
-              </button>
+              <p className="text-[8px] opacity-30 uppercase mt-1 tracking-widest">{entity.type} — {entity.hp} HP</p>
             </div>
           ))}
-        </div>
-      </main>
+        </aside>
+
+        {/* ÁREA DE EDICIÓN */}
+        <main className="flex-1 p-10 bg-black/10 overflow-y-auto custom-scrollbar">
+          {editingEntity ? (
+            <div className="max-w-2xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase text-[#C5A059] tracking-widest">Nombre de la Unidad</label>
+                    <input 
+                      value={editingEntity.name}
+                      onChange={e => setEditingEntity({...editingEntity, name: e.target.value})}
+                      className="w-full bg-[#1C1008] border border-[#C5A059]/30 p-3 text-sm outline-none focus:border-[#C5A059] text-white shadow-inner"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase text-[#C5A059] tracking-widest">Categoría</label>
+                    <select 
+                      value={editingEntity.type}
+                      onChange={e => setEditingEntity({...editingEntity, type: e.target.value as any})}
+                      className="w-full bg-[#1C1008] border border-[#C5A059]/30 p-3 text-sm outline-none text-white cursor-pointer"
+                    >
+                      <option value="Enemigo">AMENAZA (ENEMIGO)</option>
+                      <option value="NPC">NEUTRAL (NPC)</option>
+                      <option value="JUGADOR">OPERATIVO (JUGADOR)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase text-[#C5A059] tracking-widest">Puntos de Estructura (HP)</label>
+                    <input 
+                      type="number"
+                      value={editingEntity.hp}
+                      onChange={e => setEditingEntity({...editingEntity, hp: Number(e.target.value)})}
+                      className="w-full bg-[#1C1008] border border-[#C5A059]/30 p-3 text-sm outline-none focus:border-[#C5A059]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase text-[#C5A059] tracking-widest">Enlace de Imagen (URL)</label>
+                    <input 
+                      value={editingEntity.image_url || ''}
+                      onChange={e => setEditingEntity({...editingEntity, image_url: e.target.value})}
+                      className="w-full bg-[#1C1008] border border-[#C5A059]/30 p-3 text-sm outline-none focus:border-[#C5A059]"
+                      placeholder="https://..."
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase text-[#C5A059] tracking-widest">Descripción del Sujeto</label>
+                  <textarea 
+                    value={editingEntity.description || ''}
+                    onChange={e => setEditingEntity({...editingEntity, description: e.target.value})}
+                    className="w-full bg-[#1C1008] border border-[#C5A059]/30 p-4 text-sm outline-none h-40 resize-none font-serif italic"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <button 
+                  onClick={saveEntity}
+                  disabled={isSaving}
+                  className="flex-1 bg-[#C5A059] text-black py-4 font-black uppercase text-xs tracking-widest hover:bg-white transition-all disabled:opacity-30 shadow-lg"
+                >
+                  {isSaving ? 'REGISTRANDO...' : 'CONFIRMAR REGISTRO'}
+                </button>
+                <button 
+                  onClick={() => setEditingEntity(null)}
+                  className="px-8 border border-white/10 uppercase text-[10px] font-black hover:bg-white/5 transition-colors"
+                >
+                  CANCELAR
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center opacity-10 grayscale">
+              <Scroll size={100} />
+              <p className="font-serif italic text-2xl mt-6 uppercase tracking-[0.3em]">Esperando Datos del Códice</p>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
