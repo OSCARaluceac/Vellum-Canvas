@@ -22,7 +22,7 @@ body, html, #root {
   overflow: hidden; /* Evita scrolls dobles */
 }
 
-/* Scrollbar estética estilo Origami */
+/* Scrollbar estética */
 ::-webkit-scrollbar {
   width: 4px;
 }
