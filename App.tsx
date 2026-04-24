@@ -107,11 +107,28 @@ async function seedSampleItems() {
 
 function useSupabaseTable<T>(table: string, order?: string): [T[], React.Dispatch<React.SetStateAction<T[]>>] {
   const [data, setData] = useState<T[]>([]);
-  useEffect(() => {
+
+  const reload = useCallback(async () => {
     let q = (supabase.from(table) as any).select('*');
     if (order) q = q.order(order, { ascending: false });
-    q.then(({ data: d }: any) => d && setData(d as T[]));
+    const { data: d } = await q;
+    if (d) setData(d as T[]);
   }, [table, order]);
+
+  useEffect(() => {
+    reload();
+    // Realtime: recarga la tabla completa en cualquier cambio
+    const ch = supabase.channel(`tbl_${table}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table },
+        () => reload())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table },
+        () => reload())
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table },
+        () => reload())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [reload]);
+
   return [data, setData];
 }
 
@@ -1474,10 +1491,16 @@ function TacticalMapModule({ players, entities, broadcastToPlayer, broadcastToAl
                 <span className="truncate flex-1 font-bold text-white/80">{p.name}</span>
                 <Plus size={12} className="opacity-0 group-hover:opacity-100" />
               </button>
-            )) : entities.filter(e => (e.type || '').toLowerCase() === spawnFilter.toLowerCase()).map(e => (
+            )) : entities.filter(e => {
+              const t = (e.type || '').toUpperCase();
+              if (spawnFilter === 'NPC') return t === 'NPC' || t === 'ALIADO' || t === 'NEUTRAL';
+              if (spawnFilter === 'Enemigo') return t === 'ENEMIGO' || t === 'AMENAZA';
+              return false;
+            }).map(e => (
               <button key={e.id} onClick={() => spawnToken(e, false)}
                 className="w-full text-left p-2 bg-[#2D1B14]/40 text-[9px] hover:bg-[#C5A059]/20 border border-transparent flex items-center gap-3 transition-all group">
                 <span className="flex-1 truncate font-bold text-white/80">{e.name}</span>
+                <span className="text-[7px] opacity-40 uppercase">{e.type}</span>
                 <Plus size={12} className="opacity-0 group-hover:opacity-100" />
               </button>
             ))}
