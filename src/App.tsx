@@ -228,14 +228,14 @@ function useMapTokens(mapId: string | null) {
 }
 
 // ─── HELPER: navegar jugador (portal) ────────────────────────────────────────
-// Centraliza la lógica de "un jugador cruza un portal"
-// Escribe en player_views → el canal realtime del layout lo detecta y re-renderiza
+// Normaliza hotspots (JSONB puede venir null de Supabase).
+// Siempre UPDATE antes de INSERT para fiabilidad del canal Realtime.
 
 async function navigatePlayer(
   playerId: string,
   hs: { type: 'map' | 'scene'; targetMapId?: string; targetSceneId?: string; label: string },
   playerName: string
-) {
+): Promise<boolean> {
   let newMode: 'MAP' | 'SCENE' = 'MAP';
   let newData: any = null;
 
@@ -247,7 +247,7 @@ async function navigatePlayer(
     newData = {
       map_id: freshMap.id,
       image_url: freshMap.image_url,
-      hotspots: freshMap.hotspots ?? [],
+      hotspots: Array.isArray(freshMap.hotspots) ? freshMap.hotspots : [],
       name: freshMap.name,
     };
   } else if (hs.type === 'scene' && hs.targetSceneId) {
@@ -255,25 +255,25 @@ async function navigatePlayer(
       .select('*').eq('id', hs.targetSceneId).single();
     if (!freshScene) return false;
     newMode = 'SCENE';
-    newData = freshScene;
+    newData = {
+      ...freshScene,
+      hotspots: Array.isArray(freshScene.hotspots) ? freshScene.hotspots : [],
+    };
   } else {
     return false;
   }
 
-  // Upsert en player_views → dispara realtime en VellumLayout
-  const { data: existing } = await (supabase.from('player_views') as any)
-    .select('id').eq('player_id', playerId).single();
+  // UPDATE primero (más fiable en Supabase Realtime)
+  const { error } = await (supabase.from('player_views') as any)
+    .update({ mode: newMode, data: newData })
+    .eq('player_id', playerId);
 
-  if (existing) {
-    await (supabase.from('player_views') as any)
-      .update({ mode: newMode, data: newData })
-      .eq('player_id', playerId);
-  } else {
+  // Si no había fila, INSERT como fallback
+  if (error) {
     await (supabase.from('player_views') as any)
       .insert([{ player_id: playerId, mode: newMode, data: newData }]);
   }
 
-  // Log en chat
   await (supabase.from('chat_messages') as any).insert([{
     author: playerName,
     content: `cruzó el portal → "${hs.label}"`,
@@ -298,17 +298,29 @@ function VellumLayout() {
 
   useEffect(() => {
     if (!isDM && selectedPlayerId) {
-      (supabase.from('player_views') as any)
-        .select('*').eq('player_id', selectedPlayerId).single()
-        .then(({ data }: any) => data && setPlayerView(data as PlayerView));
+      // ── Carga inicial ──────────────────────────────────────────────
+      const loadView = () =>
+        (supabase.from('player_views') as any)
+          .select('*').eq('player_id', selectedPlayerId).single()
+          .then(({ data }: any) => { if (data) setPlayerView(data as PlayerView); });
+      loadView();
 
-      const ch = supabase.channel(`pv_${selectedPlayerId}`)
-        .on('postgres_changes', {
-          event: '*', schema: 'public', table: 'player_views',
-          filter: `player_id=eq.${selectedPlayerId}`
-        }, (p: any) => setPlayerView(p.new as PlayerView))
+      // ── Canal Realtime (escucha todos los eventos de la tabla) ─────
+      // No usamos filter de columna porque requiere configuración RLS especial.
+      // Filtramos por player_id manualmente en el callback.
+      const chId = `pv_${selectedPlayerId}_${Math.random().toString(36).slice(7)}`;
+      const ch = supabase.channel(chId)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'player_views' },
+          (p: any) => { if (p.new?.player_id === selectedPlayerId) setPlayerView(p.new as PlayerView); })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'player_views' },
+          (p: any) => { if (p.new?.player_id === selectedPlayerId) setPlayerView(p.new as PlayerView); })
         .subscribe();
-      return () => { supabase.removeChannel(ch); };
+
+      // ── Polling de respaldo cada 2s ────────────────────────────────
+      // Cubre el caso de que el canal Realtime no dispare (ej. RLS sin REPLICA IDENTITY)
+      const poll = setInterval(loadView, 2000);
+
+      return () => { supabase.removeChannel(ch); clearInterval(poll); };
     }
   }, [isDM, selectedPlayerId]);
 
@@ -624,12 +636,27 @@ function SceneView({ sceneData, onHotspotClick }: {
 // ─── VISTA DEL JUGADOR ────────────────────────────────────────────────────────
 // v3: portales funcionales, tienda reactiva, inventario con venta, biografía editable
 
-function PlayerViewComponent({ playerId, view, players, setPlayers }: {
+function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers }: {
   playerId: string; view: PlayerView | null;
   players: Player[]; setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
 }) {
   const player = players.find(p => p.id === playerId);
   const [shopItems] = useSupabaseTable<ShopItem>('shop_items', 'created_at');
+
+  // ── Vista local: se actualiza por prop (del layout) O por polling propio ──
+  // El polling propio cubre el caso de que el canal Realtime del padre no dispare.
+  const [localView, setLocalView] = useState<PlayerView | null>(viewProp);
+  useEffect(() => { setLocalView(viewProp); }, [viewProp]);
+  useEffect(() => {
+    if (!playerId) return;
+    const poll = setInterval(async () => {
+      const { data } = await (supabase.from('player_views') as any)
+        .select('*').eq('player_id', playerId).single();
+      if (data) setLocalView(data as PlayerView);
+    }, 1500);
+    return () => clearInterval(poll);
+  }, [playerId]);
+  const view = localView;
 
   // Tokens reactivos del mapa actual
   const mapId = view?.data?.map_id ?? null;
@@ -1352,6 +1379,7 @@ function TacticalMapModule({ players, entities, broadcastToPlayer, broadcastToAl
 
   // FIX: recarga el mapa destino fresco de Supabase antes de broadcast
   const handleHotspotClick = async (hs: any) => {
+    // MODO PORTAL (herramienta activa): borrar el portal al hacer clic
     if (activeTool === 'HOTSPOT') {
       const updatedHotspots = (currentMap.hotspots || []).filter((h: any) => h.id !== hs.id);
       const { error } = await supabase.from('maps').update({ hotspots: updatedHotspots }).eq('id', currentMap.id);
@@ -1359,23 +1387,14 @@ function TacticalMapModule({ players, entities, broadcastToPlayer, broadcastToAl
       return;
     }
 
+    // MODO MOVER: el DM solo navega su propia vista del mapa.
+    // Los portales son para los JUGADORES — el DM NO mueve a nadie al hacer clic.
     if (hs.type === 'map' && hs.targetMapId) {
       const { data: freshMap } = await (supabase.from('maps') as any)
         .select('*').eq('id', hs.targetMapId).single();
-      if (freshMap) {
-        setCurrentMap(freshMap);
-        await broadcastToAll('MAP', {
-          map_id: freshMap.id,
-          image_url: freshMap.image_url,
-          hotspots: freshMap.hotspots ?? [],
-          name: freshMap.name,
-        });
-      }
-    } else if (hs.type === 'scene' && hs.targetSceneId) {
-      const { data: freshScene } = await (supabase.from('scenes') as any)
-        .select('*').eq('id', hs.targetSceneId).single();
-      if (freshScene) await broadcastToAll('SCENE', freshScene);
+      if (freshMap) setCurrentMap(freshMap); // solo cambia la vista del DM
     }
+    // Si es escena, el DM no hace nada al clicar (los portales de escena son solo para jugadores)
   };
 
   // FIX: hotspots nunca null en el broadcast
@@ -1586,25 +1605,22 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
     else await broadcastToAll('SHOP', vd);
   };
 
-  const handlePreviewHotspotClick = async (hs: SceneHotspot) => {
-    if (hs.type === 'map' && hs.targetMapId) {
-      const { data: freshMap } = await (supabase.from('maps') as any)
-        .select('*').eq('id', hs.targetMapId).single();
-      if (freshMap) {
-        const vd = { map_id: freshMap.id, image_url: freshMap.image_url, hotspots: freshMap.hotspots ?? [] };
-        if (selectedPlayerIds.size > 0)
-          for (const pid of selectedPlayerIds) await broadcastToPlayer(pid, 'MAP', vd);
-        else await broadcastToAll('MAP', vd);
-      }
-    } else if (hs.type === 'scene' && hs.targetSceneId) {
+  // El DM clicar un portal en la preview solo cambia su vista local de edición.
+  // Los portales los cruzan los JUGADORES de forma autónoma — el DM nunca mueve a nadie aquí.
+  const handlePreviewHotspotClick = (hs: SceneHotspot) => {
+    if (hs.type === 'scene' && hs.targetSceneId) {
       const targetScene = scenes.find(s => s.id === hs.targetSceneId);
       if (targetScene) {
-        setForm({ bg_image: targetScene.bg_image, char_image: targetScene.char_image, speaker: targetScene.speaker, dialogue: targetScene.dialogue, has_shop: targetScene.has_shop, shop_items: targetScene.shop_items, hotspots: targetScene.hotspots || [] });
-        if (selectedPlayerIds.size > 0)
-          for (const pid of selectedPlayerIds) await broadcastToPlayer(pid, 'SCENE', { ...targetScene });
-        else await broadcastToAll('SCENE', { ...targetScene });
+        // Solo actualiza la preview del DM
+        setForm({
+          bg_image: targetScene.bg_image, char_image: targetScene.char_image,
+          speaker: targetScene.speaker, dialogue: targetScene.dialogue,
+          has_shop: targetScene.has_shop, shop_items: targetScene.shop_items,
+          hotspots: targetScene.hotspots || [],
+        });
       }
     }
+    // Si es tipo 'map', el DM no hace nada — los jugadores lo cruzarán ellos solos
   };
 
   const addSceneHotspot = () => {
