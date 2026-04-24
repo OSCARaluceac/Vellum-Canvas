@@ -107,11 +107,36 @@ async function seedSampleItems() {
 
 function useSupabaseTable<T>(table: string, order?: string): [T[], React.Dispatch<React.SetStateAction<T[]>>] {
   const [data, setData] = useState<T[]>([]);
+  // Ref para evitar loops: la función de recarga no entra en dependencias de useEffect
+  const tableRef = useRef(table);
+  const orderRef = useRef(order);
+
   useEffect(() => {
-    let q = (supabase.from(table) as any).select('*');
-    if (order) q = q.order(order, { ascending: false });
-    q.then(({ data: d }: any) => d && setData(d as T[]));
-  }, [table, order]);
+    let active = true;
+
+    const load = async () => {
+      let q = (supabase.from(tableRef.current) as any).select('*');
+      if (orderRef.current) q = q.order(orderRef.current, { ascending: false });
+      const { data: d } = await q;
+      if (active && d) setData(d as T[]);
+    };
+
+    load();
+
+    // Canal único por tabla + instancia aleatoria para evitar colisiones entre componentes
+    const chId = `tbl_${table}_${Math.random().toString(36).slice(7)}`;
+    const ch = supabase.channel(chId)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table }, () => load())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table }, () => load())
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table }, () => load())
+      .subscribe();
+
+    return () => {
+      active = false;
+      supabase.removeChannel(ch);
+    };
+  }, [table]); // solo depende del nombre de la tabla
+
   return [data, setData];
 }
 
@@ -119,21 +144,21 @@ function useChat(authorName: string, isDM: boolean) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
-  // Canal estable: ID fijo basado en rol, no aleatorio en cada render
-  const channelId = isDM ? 'chat_dm_global' : 'chat_player_global';
+  // ID estable por instancia del componente — no cambia entre renders, no colisiona entre instancias
+  const channelId = useRef(`chat_${Math.random().toString(36).slice(7)}`).current;
 
   useEffect(() => {
-    // Carga inicial
+    let active = true;
     supabase.from('chat_messages')
       .select('*')
       .order('created_at', { ascending: true })
       .limit(80)
       .then(({ data, error }) => {
+        if (!active) return;
         if (error) { console.error('Chat load error:', error.message); return; }
         if (data) setMessages(isDM ? data : data.filter((m: any) => m.type !== 'secret'));
       });
 
-    // Canal único y estable — no se recrea en cada render
     const ch = supabase.channel(channelId)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' },
         (payload: any) => {
@@ -142,7 +167,11 @@ function useChat(authorName: string, isDM: boolean) {
           setMessages(prev => prev.find(m => m.id === msg.id) ? prev : [...prev, msg]);
         }
       ).subscribe();
-    return () => { supabase.removeChannel(ch); };
+
+    return () => {
+      active = false;
+      supabase.removeChannel(ch);
+    };
   }, [isDM, channelId]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -157,7 +186,6 @@ function useChat(authorName: string, isDM: boolean) {
 
   const rollPublic = async (sides = 20) => {
     const r = Math.floor(Math.random() * sides) + 1;
-    // roll_result y roll_max son los nombres correctos tras el ALTER TABLE
     await supabase.from('chat_messages').insert([{
       author: authorName, content: `tiró un d${sides}`, type: 'roll',
       roll_result: r, roll_max: sides
@@ -1474,10 +1502,16 @@ function TacticalMapModule({ players, entities, broadcastToPlayer, broadcastToAl
                 <span className="truncate flex-1 font-bold text-white/80">{p.name}</span>
                 <Plus size={12} className="opacity-0 group-hover:opacity-100" />
               </button>
-            )) : entities.filter(e => (e.type || '').toLowerCase() === spawnFilter.toLowerCase()).map(e => (
+            )) : entities.filter(e => {
+              const t = (e.type || '').toUpperCase();
+              if (spawnFilter === 'NPC') return t === 'NPC' || t === 'ALIADO' || t === 'NEUTRAL';
+              if (spawnFilter === 'Enemigo') return t === 'ENEMIGO' || t === 'AMENAZA';
+              return false;
+            }).map(e => (
               <button key={e.id} onClick={() => spawnToken(e, false)}
                 className="w-full text-left p-2 bg-[#2D1B14]/40 text-[9px] hover:bg-[#C5A059]/20 border border-transparent flex items-center gap-3 transition-all group">
                 <span className="flex-1 truncate font-bold text-white/80">{e.name}</span>
+                <span className="text-[7px] opacity-40 uppercase">{e.type}</span>
                 <Plus size={12} className="opacity-0 group-hover:opacity-100" />
               </button>
             ))}
