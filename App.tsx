@@ -80,16 +80,20 @@ interface UserAccount {
 // Los mensajes viven aquí, fuera de React, para sobrevivir cambios de ruta.
 // Los componentes se suscriben con callbacks.
 
+// Chat store: guarda TODOS los mensajes (incluyendo secretos).
+// El filtrado de secretos se hace en el hook useChat según isDM.
+// El canal se abre una sola vez y sobrevive a cambios de ruta.
 const chatStore = {
   messages: [] as ChatMessage[],
   listeners: new Set<() => void>(),
-  loaded: false,
-  channel: null as any,
+  initialized: false,
 
   notify() { this.listeners.forEach(fn => fn()); },
 
   subscribe(fn: () => void) {
     this.listeners.add(fn);
+    // Notificar inmediatamente con el estado actual
+    fn();
     return () => this.listeners.delete(fn);
   },
 
@@ -99,23 +103,20 @@ const chatStore = {
     this.notify();
   },
 
-  async init(isDM: boolean) {
-    if (this.loaded) return;
-    this.loaded = true;
+  async init() {
+    if (this.initialized) { this.notify(); return; }
+    this.initialized = true;
     const { data } = await supabase.from('chat_messages')
       .select('*').order('created_at', { ascending: true }).limit(100);
     if (data) {
-      this.messages = isDM ? data : data.filter((m: any) => m.type !== 'secret');
+      this.messages = data;
       this.notify();
     }
-    // Canal global único para toda la sesión
-    this.channel = supabase.channel('chat_global_v4')
+    // Canal único global — ID con timestamp para evitar conflictos entre recargas
+    const chId = `chat_global_${Date.now()}`;
+    supabase.channel(chId)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' },
-        (p: any) => {
-          const msg = p.new as ChatMessage;
-          if (!isDM && msg.type === 'secret') return;
-          this.addMessage(msg);
-        })
+        (p: any) => { this.addMessage(p.new as ChatMessage); })
       .subscribe();
   },
 };
@@ -189,15 +190,20 @@ function useSupabaseTable<T>(table: string, order?: string): [T[], React.Dispatc
 }
 
 function useChat(authorName: string, isDM: boolean) {
-  // Usar el store global: mensajes sobreviven cambios de ruta
-  const [messages, setMessages] = useState<ChatMessage[]>(chatStore.messages);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    chatStore.init(isDM);
-    setMessages([...chatStore.messages]);
-    const unsub = chatStore.subscribe(() => setMessages([...chatStore.messages]));
+    // Inicializar store (no-op si ya está iniciado)
+    chatStore.init();
+    // Suscribirse: filtramos secretos según rol aquí
+    const unsub = chatStore.subscribe(() => {
+      const filtered = isDM
+        ? chatStore.messages
+        : chatStore.messages.filter(m => m.type !== 'secret');
+      setMessages([...filtered]);
+    });
     return unsub;
   }, [isDM]);
 
@@ -364,7 +370,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserAccount, isDM: boolean) 
     }
 
     // Buscar usuario existente
-    const { data: existing } = await (supabase.from('user_accounts') as any)
+    const { data: existing } = await (supabase.from('users') as any)
       .select('*').eq('username', username.trim()).single();
 
     if (existing) {
@@ -379,14 +385,14 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserAccount, isDM: boolean) 
       // Registro: crear cuenta nueva
       const tempId = Math.random().toString(36).slice(2);
       const hash = btoa(password + tempId.slice(0, 8));
-      const { data: created, error: err } = await (supabase.from('user_accounts') as any)
+      const { data: created, error: err } = await (supabase.from('users') as any)
         .insert([{ username: username.trim(), password_hash: hash }])
         .select().single();
       if (err) { setError('Error al crear cuenta'); }
       else {
         // Recalcular hash con el ID real
         const realHash = btoa(password + (created as any).id.slice(0, 8));
-        await (supabase.from('user_accounts') as any)
+        await (supabase.from('users') as any)
           .update({ password_hash: realHash }).eq('id', (created as any).id);
         onLogin(created as UserAccount, false);
       }
@@ -1382,14 +1388,14 @@ function OwnerAssignField({ currentOwnerId, onAssign }: {
 
   useEffect(() => {
     if (!currentOwnerId) return;
-    (supabase.from('user_accounts') as any)
+    (supabase.from('users') as any)
       .select('username').eq('id', currentOwnerId).single()
       .then(({ data }: any) => { if (data) setCurrentName(data.username); });
   }, [currentOwnerId]);
 
   const lookup = async () => {
     if (!search.trim()) { onAssign(null); setFound(null); return; }
-    const { data } = await (supabase.from('user_accounts') as any)
+    const { data } = await (supabase.from('users') as any)
       .select('*').eq('username', search.trim()).single();
     if (data) { setFound(data); setNotFound(false); onAssign(data.id); }
     else { setFound(null); setNotFound(true); }
