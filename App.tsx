@@ -1,7 +1,8 @@
 // ╔══════════════════════════════════════════════════════════════════╗
-// ║  VELLUM VTT — SISTEMA COMPLETO v3                                ║
-// ║  Fixes v3: portales jugador✓  tienda reactiva✓                  ║
-// ║            inventario con venta✓  biografía editable✓           ║
+// ║  VELLUM VTT — SISTEMA COMPLETO v4                                ║
+// ║  + Login/registro con contraseña                                 ║
+// ║  + Chat persistente entre rutas                                  ║
+// ║  + Usuarios con múltiples personajes                             ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -71,6 +72,53 @@ interface BiographyEntry {
 interface RecentPDF {
   name: string; url: string; addedAt: number;
 }
+interface UserAccount {
+  id: string; username: string; created_at: string;
+}
+
+// ─── CHAT STORE GLOBAL ────────────────────────────────────────────────────────
+// Los mensajes viven aquí, fuera de React, para sobrevivir cambios de ruta.
+// Los componentes se suscriben con callbacks.
+
+const chatStore = {
+  messages: [] as ChatMessage[],
+  listeners: new Set<() => void>(),
+  loaded: false,
+  channel: null as any,
+
+  notify() { this.listeners.forEach(fn => fn()); },
+
+  subscribe(fn: () => void) {
+    this.listeners.add(fn);
+    return () => this.listeners.delete(fn);
+  },
+
+  addMessage(msg: ChatMessage) {
+    if (this.messages.find(m => m.id === msg.id)) return;
+    this.messages = [...this.messages, msg];
+    this.notify();
+  },
+
+  async init(isDM: boolean) {
+    if (this.loaded) return;
+    this.loaded = true;
+    const { data } = await supabase.from('chat_messages')
+      .select('*').order('created_at', { ascending: true }).limit(100);
+    if (data) {
+      this.messages = isDM ? data : data.filter((m: any) => m.type !== 'secret');
+      this.notify();
+    }
+    // Canal global único para toda la sesión
+    this.channel = supabase.channel('chat_global_v4')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' },
+        (p: any) => {
+          const msg = p.new as ChatMessage;
+          if (!isDM && msg.type === 'secret') return;
+          this.addMessage(msg);
+        })
+      .subscribe();
+  },
+};
 
 // ─── CONSTANTES ───────────────────────────────────────────────────────────────
 
@@ -107,60 +155,51 @@ async function seedSampleItems() {
 
 function useSupabaseTable<T>(table: string, order?: string): [T[], React.Dispatch<React.SetStateAction<T[]>>] {
   const [data, setData] = useState<T[]>([]);
-
-  const reload = useCallback(async () => {
-    let q = (supabase.from(table) as any).select('*');
-    if (order) q = q.order(order, { ascending: false });
-    const { data: d } = await q;
-    if (d) setData(d as T[]);
-  }, [table, order]);
+  // Ref para evitar loops: la función de recarga no entra en dependencias de useEffect
+  const tableRef = useRef(table);
+  const orderRef = useRef(order);
 
   useEffect(() => {
-    reload();
-    // Realtime: recarga la tabla completa en cualquier cambio
-    const ch = supabase.channel(`tbl_${table}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table },
-        () => reload())
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table },
-        () => reload())
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table },
-        () => reload())
+    let active = true;
+
+    const load = async () => {
+      let q = (supabase.from(tableRef.current) as any).select('*');
+      if (orderRef.current) q = q.order(orderRef.current, { ascending: false });
+      const { data: d } = await q;
+      if (active && d) setData(d as T[]);
+    };
+
+    load();
+
+    // Canal único por tabla + instancia aleatoria para evitar colisiones entre componentes
+    const chId = `tbl_${table}_${Math.random().toString(36).slice(7)}`;
+    const ch = supabase.channel(chId)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table }, () => load())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table }, () => load())
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table }, () => load())
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [reload]);
+
+    return () => {
+      active = false;
+      supabase.removeChannel(ch);
+    };
+  }, [table]); // solo depende del nombre de la tabla
 
   return [data, setData];
 }
 
 function useChat(authorName: string, isDM: boolean) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Usar el store global: mensajes sobreviven cambios de ruta
+  const [messages, setMessages] = useState<ChatMessage[]>(chatStore.messages);
   const [input, setInput] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
-  // Canal estable: ID fijo basado en rol, no aleatorio en cada render
-  const channelId = isDM ? 'chat_dm_global' : 'chat_player_global';
 
   useEffect(() => {
-    // Carga inicial
-    supabase.from('chat_messages')
-      .select('*')
-      .order('created_at', { ascending: true })
-      .limit(80)
-      .then(({ data, error }) => {
-        if (error) { console.error('Chat load error:', error.message); return; }
-        if (data) setMessages(isDM ? data : data.filter((m: any) => m.type !== 'secret'));
-      });
-
-    // Canal único y estable — no se recrea en cada render
-    const ch = supabase.channel(channelId)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' },
-        (payload: any) => {
-          const msg = payload.new as ChatMessage;
-          if (!isDM && msg.type === 'secret') return;
-          setMessages(prev => prev.find(m => m.id === msg.id) ? prev : [...prev, msg]);
-        }
-      ).subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [isDM, channelId]);
+    chatStore.init(isDM);
+    setMessages([...chatStore.messages]);
+    const unsub = chatStore.subscribe(() => setMessages([...chatStore.messages]));
+    return unsub;
+  }, [isDM]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
@@ -174,7 +213,6 @@ function useChat(authorName: string, isDM: boolean) {
 
   const rollPublic = async (sides = 20) => {
     const r = Math.floor(Math.random() * sides) + 1;
-    // roll_result y roll_max son los nombres correctos tras el ALTER TABLE
     await supabase.from('chat_messages').insert([{
       author: authorName, content: `tiró un d${sides}`, type: 'roll',
       roll_result: r, roll_max: sides
@@ -302,11 +340,181 @@ async function navigatePlayer(
   return true;
 }
 
+// ─── PANTALLA DE LOGIN / REGISTRO ─────────────────────────────────────────────
+
+function LoginScreen({ onLogin }: { onLogin: (user: UserAccount, isDM: boolean) => void }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const DM_PASSWORD = 'master2024'; // contraseña fija del DM
+
+  const handle = async () => {
+    if (!username.trim() || !password.trim()) { setError('Rellena todos los campos'); return; }
+    setLoading(true); setError('');
+
+    // ¿Es el DM?
+    if (username.toLowerCase() === 'dm' || username.toLowerCase() === 'master') {
+      if (password === DM_PASSWORD) {
+        onLogin({ id: 'dm', username: 'DM', created_at: '' }, true);
+      } else {
+        setError('Contraseña de DM incorrecta');
+      }
+      setLoading(false); return;
+    }
+
+    // Buscar usuario existente
+    const { data: existing } = await (supabase.from('user_accounts') as any)
+      .select('*').eq('username', username.trim()).single();
+
+    if (existing) {
+      // Login: verificar contraseña (hash simple con btoa)
+      const hash = btoa(password + existing.id.slice(0, 8));
+      if (existing.password_hash === hash) {
+        onLogin(existing as UserAccount, false);
+      } else {
+        setError('Contraseña incorrecta');
+      }
+    } else {
+      // Registro: crear cuenta nueva
+      const tempId = Math.random().toString(36).slice(2);
+      const hash = btoa(password + tempId.slice(0, 8));
+      const { data: created, error: err } = await (supabase.from('user_accounts') as any)
+        .insert([{ username: username.trim(), password_hash: hash }])
+        .select().single();
+      if (err) { setError('Error al crear cuenta'); }
+      else {
+        // Recalcular hash con el ID real
+        const realHash = btoa(password + (created as any).id.slice(0, 8));
+        await (supabase.from('user_accounts') as any)
+          .update({ password_hash: realHash }).eq('id', (created as any).id);
+        onLogin(created as UserAccount, false);
+      }
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="h-screen w-screen bg-[#0D0704] flex items-center justify-center">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;1,400&display=swap');
+        .font-display { font-family: 'Cinzel Decorative', serif; }
+        .font-serif { font-family: 'EB Garamond', Georgia, serif; }
+        .font-title { font-family: 'Cinzel', serif; }
+      `}</style>
+      <div className="w-full max-w-sm px-8 py-10 bg-[#1C1008] border border-[#C5A059]/30 shadow-[0_0_60px_rgba(0,0,0,0.8)] flex flex-col items-center gap-6">
+        <div className="text-center">
+          <h1 className="font-display text-3xl font-black text-[#C5A059] tracking-tight">VELLUM</h1>
+          <p className="text-[9px] font-title uppercase tracking-[0.4em] text-[#C5A059]/40 mt-1">Virtual Tabletop</p>
+        </div>
+
+        <div className="w-full space-y-3">
+          <div>
+            <label className="text-[8px] font-black uppercase text-[#C5A059]/60 tracking-widest block mb-1">Nombre de usuario</label>
+            <input
+              value={username} onChange={e => setUsername(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handle()}
+              placeholder="Tu nombre..."
+              className="w-full bg-[#2D1B14] border border-white/10 px-3 py-2 text-sm font-serif text-[#D7CCC8] outline-none focus:border-[#C5A059]/60 placeholder-white/20"
+            />
+          </div>
+          <div>
+            <label className="text-[8px] font-black uppercase text-[#C5A059]/60 tracking-widest block mb-1">Contraseña</label>
+            <input
+              type="password" value={password} onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handle()}
+              placeholder="••••••••"
+              className="w-full bg-[#2D1B14] border border-white/10 px-3 py-2 text-sm font-serif text-[#D7CCC8] outline-none focus:border-[#C5A059]/60 placeholder-white/20"
+            />
+          </div>
+        </div>
+
+        {error && <p className="text-red-400 text-[10px] font-black uppercase tracking-wide">{error}</p>}
+
+        <button onClick={handle} disabled={loading}
+          className="w-full py-3 bg-[#C5A059] text-[#1C1008] font-black text-xs uppercase tracking-widest hover:bg-white transition-all disabled:opacity-40">
+          {loading ? 'Accediendo...' : 'Entrar al mundo'}
+        </button>
+
+        <p className="text-[8px] text-white/20 text-center font-serif italic">
+          Si el nombre no existe, se creará tu cuenta.<br/>
+          Para acceder como DM usa "dm" / "master2024"
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── PANEL DE PERSONAJES DEL USUARIO ──────────────────────────────────────────
+
+function UserCharactersPanel({ user, players, onSelectPlayer, selectedPlayerId, onBack }: {
+  user: UserAccount;
+  players: Player[];
+  onSelectPlayer: (id: string) => void;
+  selectedPlayerId: string | null;
+  onBack: () => void;
+}) {
+  // Personajes que pertenecen a este usuario
+  const myPlayers = players.filter((p: any) => p.owner_id === user.id);
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center gap-6 p-10">
+      <div className="text-center">
+        <p className="text-[8px] uppercase tracking-[0.4em] text-[#C5A059]/50 font-black mb-1">Bienvenido</p>
+        <h2 className="font-title text-2xl font-bold text-[#C5A059]">{user.username}</h2>
+      </div>
+
+      {myPlayers.length === 0 ? (
+        <div className="text-center opacity-30 py-10">
+          <User size={48} className="mx-auto mb-3" />
+          <p className="font-serif italic">El DM aún no te ha asignado ningún personaje.</p>
+          <p className="text-[9px] mt-2 opacity-60">Dile al DM tu nombre de usuario: <span className="text-[#C5A059]">{user.username}</span></p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-2xl">
+          {myPlayers.map(p => (
+            <Link key={p.id} to="/play" onClick={() => onSelectPlayer(p.id)}
+              className={`flex flex-col items-center gap-3 p-6 border transition-all ${
+                selectedPlayerId === p.id
+                  ? 'border-[#C5A059] bg-[#C5A059]/10'
+                  : 'border-white/8 bg-[#2D1B14] hover:border-[#C5A059]/50'
+              }`}>
+              {p.image_url ? (
+                <img src={p.image_url} className="w-16 h-16 rounded-full object-cover border-2" style={{ borderColor: p.avatar_color }} alt={p.name} />
+              ) : (
+                <div className="w-16 h-16 rounded-full border-2 flex items-center justify-center text-2xl font-bold font-title"
+                  style={{ borderColor: p.avatar_color, backgroundColor: p.avatar_color + '22', color: p.avatar_color }}>
+                  {p.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span className="font-title font-bold text-sm tracking-wide text-center">{p.name}</span>
+              <div className="flex gap-3 text-[9px] opacity-50">
+                <span>❤️ {p.hp}/{p.max_hp}</span>
+                <span>🪙 {p.gold}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      <p className="text-[8px] text-white/20 font-serif italic">
+        Tu ID de usuario: <span className="text-[#C5A059]/40 font-mono">{user.username}</span>
+      </p>
+
+      <button onClick={onBack}
+        className="text-[9px] uppercase font-black text-white/20 hover:text-white/60 tracking-widest transition-colors">
+        ← Cerrar sesión
+      </button>
+    </div>
+  );
+}
+
 // ─── LAYOUT PRINCIPAL ─────────────────────────────────────────────────────────
 
 function VellumLayout() {
   const location = useLocation();
-  const [isDM, setIsDM] = useState(true);
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
+  const [isDM, setIsDM] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [players, setPlayers] = useSupabaseTable<Player>('players', 'created_at');
   const [entities, setEntities] = useSupabaseTable<Entity>('entities', 'created_at');
@@ -315,32 +523,50 @@ function VellumLayout() {
 
   useEffect(() => { seedSampleItems(); }, []);
 
+  // Restaurar sesión de localStorage
   useEffect(() => {
-    if (!isDM && selectedPlayerId) {
-      // ── Carga inicial ──────────────────────────────────────────────
-      const loadView = () =>
-        (supabase.from('player_views') as any)
-          .select('*').eq('player_id', selectedPlayerId).single()
-          .then(({ data }: any) => { if (data) setPlayerView(data as PlayerView); });
-      loadView();
-
-      // ── Canal Realtime (escucha todos los eventos de la tabla) ─────
-      // No usamos filter de columna porque requiere configuración RLS especial.
-      // Filtramos por player_id manualmente en el callback.
-      const chId = `pv_${selectedPlayerId}`;
-      const ch = supabase.channel(chId)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'player_views' },
-          (p: any) => { if (p.new?.player_id === selectedPlayerId) setPlayerView(p.new as PlayerView); })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'player_views' },
-          (p: any) => { if (p.new?.player_id === selectedPlayerId) setPlayerView(p.new as PlayerView); })
-        .subscribe();
-
-      // ── Polling de respaldo cada 3s ────────────────────────────────
-      const poll = setInterval(loadView, 3000);
-
-      return () => { supabase.removeChannel(ch); clearInterval(poll); };
+    const saved = localStorage.getItem('vellum_session');
+    if (saved) {
+      try {
+        const { user, isDM: dm } = JSON.parse(saved);
+        setCurrentUser(user);
+        setIsDM(dm);
+      } catch {}
     }
-  }, [isDM, selectedPlayerId]);
+  }, []);
+
+  const handleLogin = (user: UserAccount, dm: boolean) => {
+    setCurrentUser(user);
+    setIsDM(dm);
+    localStorage.setItem('vellum_session', JSON.stringify({ user, isDM: dm }));
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setIsDM(false);
+    setSelectedPlayerId(null);
+    localStorage.removeItem('vellum_session');
+  };
+
+  useEffect(() => {
+    if (!selectedPlayerId) return;
+    const loadView = () =>
+      (supabase.from('player_views') as any)
+        .select('*').eq('player_id', selectedPlayerId).single()
+        .then(({ data }: any) => { if (data) setPlayerView(data as PlayerView); });
+    loadView();
+
+    const chId = `pv_${selectedPlayerId}`;
+    const ch = supabase.channel(chId)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'player_views' },
+        (p: any) => { if (p.new?.player_id === selectedPlayerId) setPlayerView(p.new as PlayerView); })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'player_views' },
+        (p: any) => { if (p.new?.player_id === selectedPlayerId) setPlayerView(p.new as PlayerView); })
+      .subscribe();
+
+    const poll = setInterval(loadView, 3000);
+    return () => { supabase.removeChannel(ch); clearInterval(poll); };
+  }, [selectedPlayerId]);
 
   const broadcastToPlayer = useCallback(async (playerId: string, mode: PlayerView['mode'], data: any) => {
     const { data: ex } = await (supabase.from('player_views') as any)
@@ -355,6 +581,9 @@ function VellumLayout() {
   const broadcastToAll = useCallback(async (mode: PlayerView['mode'], data: any) => {
     for (const p of players) await broadcastToPlayer(p.id, mode, data);
   }, [players, broadcastToPlayer]);
+
+  // Sin sesión → pantalla de login
+  if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
 
   return (
     <div className="h-screen w-screen flex flex-col bg-[#1C1008] text-[#D7CCC8] overflow-hidden font-sans select-none relative">
@@ -381,17 +610,26 @@ function VellumLayout() {
         </Link>
       )}
 
-      <button onClick={() => setIsDM(!isDM)}
-        className="fixed bottom-4 right-4 z-[200] bg-[#C5A059] border-2 border-[#C5A059] p-3 rounded-full hover:scale-110 transition-all shadow-2xl"
-        title={isDM ? 'Modo DM activo' : 'Modo Jugador activo'}>
-        {isDM ? <Settings size={22} className="text-[#1C1008]" /> : <User size={22} className="text-[#1C1008]" />}
-      </button>
+      {/* Indicador de usuario + logout */}
+      <div className="fixed top-4 right-16 z-[200] flex items-center gap-2">
+        <span className="text-[8px] font-black uppercase text-[#C5A059]/50 tracking-widest">{currentUser.username}</span>
+        <button onClick={handleLogout}
+          className="text-[8px] font-black uppercase text-white/20 hover:text-red-400 transition-colors px-2 py-1 border border-white/10 hover:border-red-400/30">
+          Salir
+        </button>
+      </div>
 
       <main className="flex-1 flex overflow-hidden">
         <Routes>
           <Route path="/" element={isDM
             ? <MasterDashboard players={players} setPlayers={setPlayers} />
-            : <PlayerSelector players={players} selectedId={selectedPlayerId} onSelect={setSelectedPlayerId} />
+            : <UserCharactersPanel
+                user={currentUser}
+                players={players}
+                onSelectPlayer={setSelectedPlayerId}
+                selectedPlayerId={selectedPlayerId}
+                onBack={handleLogout}
+              />
           } />
           {isDM && <>
             <Route path="/tactical" element={<TacticalMapModule players={players} entities={entities} broadcastToPlayer={broadcastToPlayer} broadcastToAll={broadcastToAll} />} />
@@ -1130,6 +1368,64 @@ function GiveItemSection({ playerId, playerName }: { playerId: string; playerNam
   );
 }
 
+// ─── ASIGNAR PROPIETARIO ──────────────────────────────────────────────────────
+// El DM escribe el nombre de usuario y el campo busca el ID automáticamente
+
+function OwnerAssignField({ currentOwnerId, onAssign }: {
+  currentOwnerId: string | null;
+  onAssign: (id: string | null) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [found, setFound] = useState<UserAccount | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [currentName, setCurrentName] = useState('');
+
+  useEffect(() => {
+    if (!currentOwnerId) return;
+    (supabase.from('user_accounts') as any)
+      .select('username').eq('id', currentOwnerId).single()
+      .then(({ data }: any) => { if (data) setCurrentName(data.username); });
+  }, [currentOwnerId]);
+
+  const lookup = async () => {
+    if (!search.trim()) { onAssign(null); setFound(null); return; }
+    const { data } = await (supabase.from('user_accounts') as any)
+      .select('*').eq('username', search.trim()).single();
+    if (data) { setFound(data); setNotFound(false); onAssign(data.id); }
+    else { setFound(null); setNotFound(true); }
+  };
+
+  return (
+    <div className="space-y-1">
+      {currentOwnerId && (
+        <p className="text-[8px] text-[#C5A059]/60">
+          Asignado a: <span className="text-[#C5A059]">{currentName || currentOwnerId.slice(0, 8)}</span>
+        </p>
+      )}
+      <div className="flex gap-2">
+        <input
+          value={search} onChange={e => setSearch(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && lookup()}
+          placeholder="Nombre de usuario..."
+          className="flex-1 bg-[#1C1008] border border-white/10 p-2 text-sm outline-none focus:border-[#C5A059] text-[#D7CCC8] placeholder-white/20"
+        />
+        <button onClick={lookup}
+          className="px-3 bg-[#C5A059]/20 border border-[#C5A059]/30 text-[#C5A059] text-[9px] font-black hover:bg-[#C5A059] hover:text-black transition-all">
+          Buscar
+        </button>
+      </div>
+      {found && <p className="text-[9px] text-green-400">✅ {found.username} encontrado</p>}
+      {notFound && <p className="text-[9px] text-red-400">❌ Usuario no encontrado</p>}
+      {currentOwnerId && (
+        <button onClick={() => { onAssign(null); setSearch(''); setFound(null); setCurrentName(''); }}
+          className="text-[8px] text-red-400/50 hover:text-red-400 transition-colors">
+          Quitar asignación
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── MASTER DASHBOARD ─────────────────────────────────────────────────────────
 
 function MasterDashboard({ players, setPlayers }: {
@@ -1165,6 +1461,7 @@ function MasterDashboard({ players, setPlayers }: {
       name: editingPlayer.name, hp: editingPlayer.hp, max_hp: editingPlayer.max_hp,
       gold: editingPlayer.gold, avatar_color: editingPlayer.avatar_color,
       image_url: editingPlayer.image_url || null,
+      owner_id: (editingPlayer as any).owner_id || null,
     }).eq('id', editingPlayer.id);
     setPlayers(prev => prev.map(p => p.id === editingPlayer.id ? editingPlayer : p));
     setEditingPlayer(null);
@@ -1260,7 +1557,7 @@ function MasterDashboard({ players, setPlayers }: {
 
       {editingPlayer && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center" onClick={() => setEditingPlayer(null)}>
-          <div className="bg-[#2D1B14] border border-[#C5A059]/50 p-6 w-96 shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#2D1B14] border border-[#C5A059]/50 p-6 w-96 shadow-2xl overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-5">
               <h4 className="font-title font-bold text-lg">Editar Personaje</h4>
               <button onClick={() => setEditingPlayer(null)} className="text-white/30 hover:text-white"><X size={16} /></button>
@@ -1274,6 +1571,17 @@ function MasterDashboard({ players, setPlayers }: {
                     className="w-full bg-[#1C1008] border border-white/10 p-2 text-sm outline-none focus:border-[#C5A059]" />
                 </div>
               ))}
+              <div>
+                <label className="text-[9px] uppercase font-black text-[#C5A059] mb-1 block">
+                  Asignar a usuario (nombre de cuenta)
+                </label>
+                <OwnerAssignField
+                  currentOwnerId={(editingPlayer as any).owner_id ?? null}
+                  onAssign={async (ownerId) => {
+                    setEditingPlayer({ ...editingPlayer, owner_id: ownerId } as any);
+                  }}
+                />
+              </div>
               <div className="flex gap-2">
                 {[{ label: 'HP Actual', key: 'hp' }, { label: 'HP Máx', key: 'max_hp' }, { label: 'Oro', key: 'gold' }].map(({ label, key }) => (
                   <div key={key} className="flex-1">
