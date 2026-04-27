@@ -709,6 +709,8 @@ function VellumLayout() {
                 view={playerView}
                 players={players}
                 setPlayers={setPlayers}
+                currentUser={currentUser}
+                onSwitchPlayer={setSelectedPlayerId}
               />
             } />
           )}
@@ -956,12 +958,18 @@ function SceneView({ sceneData, onHotspotClick }: {
 // ─── VISTA DEL JUGADOR ────────────────────────────────────────────────────────
 // v3: portales funcionales, tienda reactiva, inventario con venta, biografía editable
 
-function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers }: {
+function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, currentUser, onSwitchPlayer }: {
   playerId: string; view: PlayerView | null;
   players: Player[]; setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
+  currentUser?: any; onSwitchPlayer?: (id: string) => void; // 🛡️ Nuevas propiedades
 }) {
   const player = players.find(p => p.id === playerId);
   const [shopItems] = useSupabaseTable<ShopItem>('shop_items', 'created_at');
+
+  // 🛡️ Estado del panel flotante y filtro de personajes del usuario
+  const [showSheet, setShowSheet] = useState(false);
+  const ownedPlayers = currentUser ? players.filter((p: any) => p.owner_id === currentUser.id) : [];
+
 
   // ── Vista local: polling cada 3s como respaldo al canal Realtime ──────────
   const [localView, setLocalView] = useState<PlayerView | null>(viewProp);
@@ -1094,158 +1102,118 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers }: 
   );
 
   return (
-    <div className="flex h-full w-full bg-[#0D0704]">
+    <div className="flex h-full w-full bg-[#0D0704] relative overflow-hidden">
 
-      {/* ── IZQUIERDA: Ficha ─────────────────────────────────────────── */}
-      <aside style={{ width: '220px', minWidth: '220px' }}
-        className="bg-[#1C1008] border-r border-[#C5A059]/15 flex flex-col overflow-hidden shadow-2xl z-20">
+      {/* ── CENTRO: Visor Principal Expandido ── */}
+      <main className="flex-1 relative overflow-hidden">
 
-        <div className="p-4 flex flex-col items-center gap-2 border-b border-[#C5A059]/15 flex-shrink-0">
-          {player?.image_url ? (
-            <img src={player.image_url}
-              className="w-20 h-20 rounded-full object-cover border-2 border-[#C5A059]"
-              alt={player.name} />
-          ) : (
-            <div className="w-20 h-20 rounded-full border-2 border-[#C5A059] flex items-center justify-center text-2xl font-bold font-title text-[#C5A059]">
-              {player?.name?.charAt(0) ?? '?'}
-            </div>
-          )}
-          <h2 className="font-title text-sm font-bold text-center uppercase tracking-tighter italic">
-            {player?.name ?? '...'}
-          </h2>
-          <div className="w-full space-y-2">
-            <StatBar label="HP" value={player?.hp ?? 0} max={player?.max_hp ?? 100} color="#ef4444" />
-            <div className="flex justify-between border-b border-white/5 pb-1">
-              <span className="text-[9px] uppercase font-black opacity-40">Oro</span>
-              <span className="font-serif text-yellow-400 font-bold text-sm">🪙 {player?.gold ?? 0}</span>
-            </div>
-          </div>
-          <button onClick={handleRoll}
-            className="w-full py-2 bg-[#2D1B14] border border-[#C5A059]/30 hover:border-[#C5A059] flex flex-col items-center gap-0.5 transition-all mt-1">
-            <Dices size={16} className="text-[#C5A059]" />
-            <span className="text-[8px] font-black uppercase text-[#C5A059]">Tirar d20</span>
-            {lastRoll !== null && (
-              <span className="text-lg font-title font-bold text-white">{lastRoll}</span>
-            )}
+        {/* 🛡️ Botón Flotante del Operativo */}
+        <div className="absolute top-4 left-4 z-[200]">
+          <button onClick={() => setShowSheet(!showSheet)}
+            className={`p-3 rounded-sm border shadow-2xl transition-all ${showSheet ? 'bg-[#C5A059] text-black border-[#C5A059]' : 'bg-[#1C1008] text-[#C5A059] border-[#C5A059]/50 hover:bg-[#C5A059] hover:text-black'}`}>
+            <User size={20} />
           </button>
         </div>
 
-        {/* Tabs nav */}
-        <div className="flex border-b border-[#C5A059]/10 flex-shrink-0">
-          {([['inv', 'Inv', Package], ['bio', 'Bio', PenLine]] as const).map(([tab, label, Icon]) => (
-            <button key={tab} onClick={() => setActiveTab(tab as any)}
-              className={`flex-1 py-2 flex flex-col items-center gap-0.5 transition-all ${
-                activeTab === tab ? 'text-[#C5A059] bg-[#C5A059]/10' : 'text-white/30 hover:text-white/60'
-              }`}>
-              <Icon size={12} />
-              <span className="text-[7px] font-black uppercase">{label}</span>
-            </button>
-          ))}
-        </div>
+        {/* 🛡️ Módulo de Estado Oculto */}
+        {showSheet && (
+          <div className="absolute top-16 left-4 z-[200] w-[260px] max-h-[85vh] flex flex-col bg-[#1C1008]/95 backdrop-blur-md border border-[#C5A059]/30 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Selector de Entidad */}
+            {ownedPlayers.length > 1 && (
+              <div className="p-2 bg-black/60 border-b border-[#C5A059]/20">
+                <select value={playerId} onChange={e => { onSwitchPlayer?.(e.target.value); setShowSheet(false); }}
+                  className="w-full bg-transparent text-[#C5A059] text-[10px] uppercase font-black outline-none cursor-pointer">
+                  {ownedPlayers.map(p => <option key={p.id} value={p.id} className="bg-black">{p.name}</option>)}
+                </select>
+              </div>
+            )}
 
-        {/* Contenido tabs */}
-        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-
-          {/* ── TAB: INVENTARIO ──────────────────────────────────────── */}
-          {activeTab === 'inv' && (
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1.5">
-              <p className="text-[8px] font-black uppercase text-[#C5A059]/60 tracking-widest">
-                Inventario ({inventory.length})
-              </p>
-              {inventory.length === 0 && (
-                <p className="text-center text-[8px] italic opacity-20 py-6 font-serif">Bolsas vacías</p>
+            {/* Ficha del Personaje */}
+            <div className="p-4 flex flex-col items-center gap-2 border-b border-[#C5A059]/15 flex-shrink-0">
+              {player?.image_url ? (
+                <img src={player.image_url} className="w-16 h-16 rounded-full object-cover border-2 border-[#C5A059]" alt={player.name} />
+              ) : (
+                <div className="w-16 h-16 rounded-full border-2 border-[#C5A059] flex items-center justify-center text-2xl font-bold font-title text-[#C5A059]">
+                  {player?.name?.charAt(0) ?? '?'}
+                </div>
               )}
-              {inventory.map(inv => (
-                <div key={inv.id}
-                  className="bg-[#2D1B14] border border-white/5 p-2 group hover:border-[#C5A059]/30 transition-all">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base leading-none">{inv.shop_items?.icon || '📦'}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[9px] font-bold truncate text-[#D7CCC8]">{inv.shop_items?.name}</p>
-                      <p className="text-[7px] text-[#C5A059]/50">
-                        ×{inv.quantity} · vender {inv.shop_items?.sell_price ?? '?'}🪙
-                      </p>
+              <h2 className="font-title text-sm font-bold text-center uppercase tracking-tighter italic">{player?.name ?? '...'}</h2>
+              <div className="w-full space-y-2">
+                <StatBar label="HP" value={player?.hp ?? 0} max={player?.max_hp ?? 100} color="#ef4444" />
+                <div className="flex justify-between border-b border-white/5 pb-1">
+                  <span className="text-[9px] uppercase font-black opacity-40">Oro</span>
+                  <span className="font-serif text-yellow-400 font-bold text-sm">🪙 {player?.gold ?? 0}</span>
+                </div>
+              </div>
+              <button onClick={handleRoll} className="w-full py-2 bg-[#2D1B14] border border-[#C5A059]/30 hover:border-[#C5A059] flex flex-col items-center gap-0.5 transition-all mt-1">
+                <Dices size={16} className="text-[#C5A059]" />
+                <span className="text-[8px] font-black uppercase text-[#C5A059]">Tirar d20</span>
+                {lastRoll !== null && <span className="text-lg font-title font-bold text-white">{lastRoll}</span>}
+              </button>
+            </div>
+
+            {/* Navegación Bio/Inv */}
+            <div className="flex border-b border-[#C5A059]/10 flex-shrink-0">
+              {([['inv', 'Inv', Package], ['bio', 'Bio', PenLine]] as const).map(([tab, label, Icon]) => (
+                <button key={tab} onClick={() => setActiveTab(tab as any)}
+                  className={`flex-1 py-2 flex flex-col items-center gap-0.5 transition-all ${activeTab === tab ? 'text-[#C5A059] bg-[#C5A059]/10' : 'text-white/30 hover:text-white/60'}`}>
+                  <Icon size={12} />
+                  <span className="text-[7px] font-black uppercase">{label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Contenido Tabs */}
+            <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+              {activeTab === 'inv' && (
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1.5">
+                  <p className="text-[8px] font-black uppercase text-[#C5A059]/60 tracking-widest">Inventario ({inventory.length})</p>
+                  {inventory.length === 0 && <p className="text-center text-[8px] italic opacity-20 py-6 font-serif">Bolsas vacías</p>}
+                  {inventory.map(inv => (
+                    <div key={inv.id} className="bg-[#2D1B14] border border-white/5 p-2 group hover:border-[#C5A059]/30 transition-all">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base leading-none">{inv.shop_items?.icon || '📦'}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[9px] font-bold truncate text-[#D7CCC8]">{inv.shop_items?.name}</p>
+                          <p className="text-[7px] text-[#C5A059]/50">×{inv.quantity} · vender {inv.shop_items?.sell_price ?? '?'}🪙</p>
+                        </div>
+                        <button onClick={() => handleSell(inv)} className="opacity-0 group-hover:opacity-100 text-[7px] bg-[#C5A059]/10 border border-[#C5A059]/30 px-1.5 py-0.5 text-[#C5A059] hover:bg-[#C5A059] hover:text-black transition-all flex-shrink-0">
+                          Vender
+                        </button>
+                      </div>
                     </div>
-                    <button onClick={() => handleSell(inv)}
-                      className="opacity-0 group-hover:opacity-100 text-[7px] bg-[#C5A059]/10 border border-[#C5A059]/30 px-1.5 py-0.5 text-[#C5A059] hover:bg-[#C5A059] hover:text-black transition-all flex-shrink-0">
-                      Vender
+                  ))}
+                </div>
+              )}
+              {activeTab === 'bio' && (
+                <div className="flex-1 flex flex-col overflow-hidden p-3 gap-2">
+                  <p className="text-[8px] font-black uppercase text-[#C5A059]/60 tracking-widest flex-shrink-0">Diario</p>
+                  <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 min-h-0">
+                    {bio.map(entry => (
+                      <div key={entry.id} className={`p-2 border-l-2 text-[9px] font-serif leading-relaxed ${entry.is_dm ? 'border-[#C5A059] text-[#C5A059]/80 bg-[#C5A059]/5 italic' : 'border-white/20 text-[#D7CCC8]/75'}`}>
+                        <span className="text-[6px] font-black uppercase opacity-40 block mb-0.5 not-italic">{entry.author}</span>
+                        {entry.content}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex-shrink-0 border-t border-white/5 pt-2 space-y-1.5">
+                    <textarea value={bioInput} onChange={e => setBioInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) addBioEntry(); }} placeholder="Escribe... (Ctrl+Enter)" rows={2} className="w-full bg-[#2D1B14] border border-white/8 p-2 text-[9px] font-serif italic outline-none resize-none focus:border-[#C5A059] text-[#D7CCC8]" />
+                    <button onClick={addBioEntry} disabled={!bioInput.trim()} className="w-full py-1.5 bg-[#C5A059]/15 border border-[#C5A059]/30 text-[#C5A059] text-[8px] font-black uppercase hover:bg-[#C5A059] hover:text-black transition-all flex items-center justify-center gap-1">
+                      <PenLine size={10} /> Anotar
                     </button>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
-          )}
-
-          {/* ── TAB: BIOGRAFÍA ───────────────────────────────────────── */}
-          {activeTab === 'bio' && (
-            <div className="flex-1 flex flex-col overflow-hidden p-3 gap-2">
-              <p className="text-[8px] font-black uppercase text-[#C5A059]/60 tracking-widest flex-shrink-0">
-                Diario · {player?.name}
-              </p>
-
-              {/* Entradas */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 min-h-0">
-                {bio.length === 0 && (
-                  <p className="text-[8px] italic opacity-20 text-center py-6 font-serif">
-                    El diario está en blanco...
-                  </p>
-                )}
-                {bio.map(entry => (
-                  <div key={entry.id}
-                    className={`p-2 border-l-2 text-[9px] font-serif leading-relaxed ${
-                      entry.is_dm
-                        ? 'border-[#C5A059] text-[#C5A059]/80 bg-[#C5A059]/5 italic'
-                        : 'border-white/20 text-[#D7CCC8]/75'
-                    }`}>
-                    <span className="text-[6px] font-black uppercase opacity-40 block mb-0.5 not-italic">
-                      {entry.author} · {new Date(entry.created_at).toLocaleDateString()}
-                      {entry.is_dm && ' [DM]'}
-                    </span>
-                    {entry.content}
-                  </div>
-                ))}
-              </div>
-
-              {/* Input nueva entrada */}
-              <div className="flex-shrink-0 border-t border-white/5 pt-2 space-y-1.5">
-                <textarea
-                  value={bioInput}
-                  onChange={e => setBioInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) addBioEntry(); }}
-                  placeholder="Escribe en tu diario... (Ctrl+Enter para guardar)"
-                  rows={3}
-                  className="w-full bg-[#2D1B14] border border-white/8 p-2 text-[9px] font-serif italic outline-none resize-none focus:border-[#C5A059] text-[#D7CCC8] placeholder-white/20"
-                />
-                <button onClick={addBioEntry} disabled={!bioInput.trim()}
-                  className="w-full py-1.5 bg-[#C5A059]/15 border border-[#C5A059]/30 text-[#C5A059] text-[8px] font-black uppercase hover:bg-[#C5A059] hover:text-black transition-all disabled:opacity-30 flex items-center justify-center gap-1">
-                  <PenLine size={10} /> Anotar en el diario
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </aside>
-
-      {/* ── CENTRO ───────────────────────────────────────────────────── */}
-      <main className="flex-1 relative overflow-hidden">
-
-        {mode === 'MAP' && (
-          <MapWithTokens
-            map={{
-              image_url: data.image_url,
-              hotspots: Array.isArray(data.hotspots) ? data.hotspots : [],
-            }}
-            tokens={tokens}
-            isDM={false}
-            onHotspotClick={handleHotspotClick}
-          />
+          </div>
         )}
 
-        {mode === 'SCENE' && (
-          <SceneView sceneData={data} onHotspotClick={handleHotspotClick} />
-        )}
+        {/* Visualización */}
+        {mode === 'MAP' && <MapWithTokens map={{ image_url: data.image_url, hotspots: Array.isArray(data.hotspots) ? data.hotspots : [] }} tokens={tokens} isDM={false} onHotspotClick={handleHotspotClick} />}
+        {mode === 'SCENE' && <SceneView sceneData={data} onHotspotClick={handleHotspotClick} />}
 
-        {/* ── OVERLAY TIENDA ─────────────────────────────────────────── */}
+        {/* Tienda */}
         {mode === 'SHOP' && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div className="w-full max-w-2xl h-[78%] bg-[#1C1008]/97 border-2 border-[#C5A059]/50 shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden">
@@ -1320,15 +1288,14 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers }: 
         )}
       </main>
 
-      {/* ── DERECHA: Chat ────────────────────────────────────────────── */}
-      <aside style={{ width: '220px', minWidth: '220px' }}
+      {/* ── DERECHA: Chat Ampliado a 340px ── */}
+      <aside style={{ width: '340px', minWidth: '340px' }}
         className="bg-[#150D08] border-l border-white/5 flex flex-col shadow-2xl z-20">
         <ChatPanel authorName={player?.name ?? 'Jugador'} isDM={false} compact />
       </aside>
     </div>
   );
 }
-
 // ─── INSPECTOR DE INVENTARIO DM ───────────────────────────────────────────────
 
 function DMInventoryInspector({ playerId, playerName }: { playerId: string; playerName: string }) {
