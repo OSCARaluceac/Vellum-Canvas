@@ -1521,12 +1521,28 @@ function MasterDashboard({ players, setPlayers }: {
 
   const saveEdit = async () => {
     if (!editingPlayer) return;
-    await (supabase.from('players') as any).update({
-      name: editingPlayer.name, hp: editingPlayer.hp, max_hp: editingPlayer.max_hp,
-      gold: editingPlayer.gold, avatar_color: editingPlayer.avatar_color,
+
+    // 🛡️ Preparamos la carga de datos
+    const payload = {
+      name: editingPlayer.name,
+      hp: editingPlayer.hp,
+      max_hp: editingPlayer.max_hp,
+      gold: editingPlayer.gold,
+      avatar_color: editingPlayer.avatar_color,
       image_url: editingPlayer.image_url || null,
       owner_id: (editingPlayer as any).owner_id || null,
-    }).eq('id', editingPlayer.id);
+    };
+
+    // 🛡️ Intentamos la inyección y capturamos errores
+    const { error } = await (supabase.from('players') as any)
+      .update(payload)
+      .eq('id', editingPlayer.id);
+
+    if (error) {
+      alert(`⚠️ Falla en el enlace: ${error.message}`);
+      return; // Detenemos la operación para que no creas que se guardó
+    }
+
     setPlayers(prev => prev.map(p => p.id === editingPlayer.id ? editingPlayer : p));
     setEditingPlayer(null);
   };
