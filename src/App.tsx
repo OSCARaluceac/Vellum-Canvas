@@ -127,6 +127,41 @@ const CATEGORY_ICONS: Record<string, string> = {
   weapon: '⚔️', armor: '🛡️', potion: '🧪', misc: '📦', magic: '✨', food: '🍖'
 };
 
+// ─── MATRIZ TÁCTICA DE ATMÓSFERAS ─────────────────────────────────────────────
+export const PALETTES = {
+  classic: { base: '#0D0704', panel: '#1C1008', input: '#2D1B14', accent: '#C5A059', text: '#D7CCC8' },
+  arcane:  { base: '#070913', panel: '#111526', input: '#1C223D', accent: '#8B9DF2', text: '#D8DCE8' },
+  forest:  { base: '#050A07', panel: '#0D1711', input: '#16261C', accent: '#A3B18A', text: '#DADED4' },
+  gothic:  { base: '#0A0505', panel: '#170B0B', input: '#241111', accent: '#C82A2A', text: '#E8D8D8' }
+};
+
+export function applyPalette(key: keyof typeof PALETTES) {
+  const p = PALETTES[key];
+  const root = document.documentElement;
+  root.style.setProperty('--bg-base', p.base);
+  root.style.setProperty('--bg-panel', p.panel);
+  root.style.setProperty('--bg-input', p.input);
+  root.style.setProperty('--accent', p.accent);
+  root.style.setProperty('--text-main', p.text);
+  localStorage.setItem('vellum_palette', key);
+}
+
+export function ThemeSwitcher() {
+  return (
+    <div className="flex gap-2 p-2 bg-black/40 border border-white/5 rounded-sm">
+      {(Object.keys(PALETTES) as Array<keyof typeof PALETTES>).map((key) => (
+        <button
+          key={key}
+          onClick={() => applyPalette(key)}
+          title={`Activar ${key}`}
+          className="w-4 h-4 rounded-full border border-white/20 transition-transform hover:scale-125"
+          style={{ backgroundColor: PALETTES[key].accent }}
+        />
+      ))}
+    </div>
+  );
+}
+
 const SAMPLE_ITEMS: Partial<ShopItem>[] = [
   { name: 'Espada Corta', description: 'Hoja de acero forjado. +2 ATK', price: 50, sell_price: 25, icon: '⚔️', category: 'weapon', stock: -1 },
   { name: 'Escudo de Roble', description: 'Protección básica. +3 DEF', price: 40, sell_price: 20, icon: '🛡️', category: 'armor', stock: -1 },
@@ -557,18 +592,18 @@ function AuthScreen({ onLogin }: { onLogin: (user: any) => void }) {
   };
 
   return (
-    <div className="h-screen w-screen flex items-center justify-center bg-[#0D0704] animate-in fade-in duration-700">
-      <div className="w-80 p-8 bg-[#1C1008] border-2 border-[#C5A059]/30 shadow-2xl relative">
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#C5A059] text-black px-4 py-0.5 text-[9px] font-black uppercase tracking-widest">
+    <div className="h-screen w-screen flex items-center justify-center bg-[var(--bg-base)] animate-in fade-in duration-700">
+      <div className="w-80 p-8 bg-[var(--bg-panel)] border-2 border-[var(--accent)]/30 shadow-2xl relative">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--accent)] text-black px-4 py-0.5 text-[9px] font-black uppercase tracking-widest">
           Vellum Access
         </div>
         <div className="space-y-4 mt-4">
           <input type="text" placeholder="ID de Operativo..." value={username} onChange={e => setUsername(e.target.value)}
-            className="w-full bg-black/40 border border-[#C5A059]/20 p-3 text-xs text-white outline-none focus:border-[#C5A059]" />
+            className="w-full bg-black/40 border border-[var(--accent)]/20 p-3 text-xs text-white outline-none focus:border-[var(--accent)]" />
           <input type="password" placeholder="Código de Acceso..." value={password} onChange={e => setPassword(e.target.value)}
-            className="w-full bg-black/40 border border-[#C5A059]/20 p-3 text-xs text-white outline-none focus:border-[#C5A059]" />
+            className="w-full bg-black/40 border border-[var(--accent)]/20 p-3 text-xs text-white outline-none focus:border-[var(--accent)]" />
           {error && <p className="text-[9px] text-red-500 italic text-center">{error}</p>}
-          <button onClick={handleAuth} className="w-full bg-[#C5A059] text-black py-3 text-[10px] font-black uppercase hover:bg-white transition-all shadow-lg active:scale-95">
+          <button onClick={handleAuth} className="w-full bg-[var(--accent)] text-black py-3 text-[10px] font-black uppercase hover:bg-white transition-all shadow-lg active:scale-95">
             Establecer Enlace
           </button>
         </div>
@@ -586,6 +621,12 @@ function VellumLayout() {
   const [entities, setEntities] = useSupabaseTable<Entity>('entities', 'created_at');
   const [playerView, setPlayerView] = useState<PlayerView | null>(null);
   const isHome = location.pathname === '/';
+
+  // Cargar preferencia al iniciar
+  useEffect(() => {
+    const saved = localStorage.getItem('vellum_palette') as keyof typeof PALETTES;
+    if (saved && PALETTES[saved]) applyPalette(saved);
+  }, []);
 
   useEffect(() => { seedSampleItems(); }, []);
 
@@ -652,37 +693,55 @@ function VellumLayout() {
   if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#1C1008] text-[#D7CCC8] overflow-hidden font-sans select-none relative">
+    <div className="h-screen w-screen flex flex-col bg-[var(--bg-panel)] text-[var(--text-main)] overflow-hidden font-sans select-none relative">
       <style>{`
+        :root {
+          --bg-base: #0D0704;
+          --bg-panel: #1C1008;
+          --bg-input: #2D1B14;
+          --accent: #C5A059;
+          --text-main: #D7CCC8;
+        }
+
+        /* Clases de utilidad vinculadas a las variables */
+        .bg-base { background-color: var(--bg-base); }
+        .bg-panel { background-color: var(--bg-panel); }
+        .bg-input { background-color: var(--bg-input); }
+        .text-accent { color: var(--accent); }
+        .border-accent { border-color: var(--accent); }
+
         @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap');
         .font-display { font-family: 'Cinzel Decorative', serif; }
         .font-serif { font-family: 'EB Garamond', Georgia, serif; }
         .font-title { font-family: 'Cinzel', serif; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #C5A05940; border-radius: 2px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #C5A059; }
-        * { scrollbar-width: thin; scrollbar-color: #C5A05940 transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--accent)40; border-radius: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+        * { scrollbar-width: thin; scrollbar-color: var(--accent)40 transparent; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .animate-in { animation: fadeIn 0.4s ease forwards; }
-        @keyframes pulse-gold { 0%,100% { box-shadow: 0 0 0 0 #C5A05940; } 50% { box-shadow: 0 0 0 8px #C5A05900; } }
+        @keyframes pulse-gold { 0%,100% { box-shadow: 0 0 0 0 var(--accent)40; } 50% { box-shadow: 0 0 0 8px var(--accent)00; } }
         .pulse-gold { animation: pulse-gold 2s infinite; }
       `}</style>
 
       {!isHome && (
-        <Link to="/" className="fixed top-4 left-4 z-[200] bg-[#2D1B14] border border-[#C5A059]/50 p-2.5 rounded-full text-[#C5A059] hover:bg-[#C5A059] hover:text-[#1C1008] transition-all shadow-2xl flex items-center gap-2 group">
+        <Link to="/" className="fixed top-4 left-4 z-[200] bg-[var(--bg-input)] border border-[var(--accent)]/50 p-2.5 rounded-full text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--bg-panel)] transition-all shadow-2xl flex items-center gap-2 group">
           <Home size={18} />
           <span className="text-[9px] font-black uppercase tracking-widest hidden group-hover:inline pr-1">Nexo</span>
         </Link>
       )}
 
       {/* Indicador de usuario + logout */}
-      <div className="fixed top-4 right-16 z-[200] flex items-center gap-2">
-        <span className="text-[8px] font-black uppercase text-[#C5A059]/50 tracking-widest">{currentUser.username}</span>
-        <button onClick={handleLogout}
-          className="text-[8px] font-black uppercase text-white/20 hover:text-red-400 transition-colors px-2 py-1 border border-white/10 hover:border-red-400/30">
-          Salir
-        </button>
+      <div className="fixed top-4 right-16 z-[200] flex items-center gap-4">
+        <ThemeSwitcher />
+        <div className="flex items-center gap-2">
+          <span className="text-[8px] font-black uppercase text-[var(--accent)]/50 tracking-widest">{currentUser.username}</span>
+          <button onClick={handleLogout}
+            className="text-[8px] font-black uppercase text-white/20 hover:text-red-400 transition-colors px-2 py-1 border border-white/10 hover:border-red-400/30">
+            Salir
+          </button>
+        </div>
       </div>
 
       <main className="flex-1 flex overflow-hidden">
@@ -736,14 +795,14 @@ function MapWithTokens({
   children?: React.ReactNode;
 }) {
   if (!map?.image_url) return (
-    <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 opacity-15 bg-[#0D0704]">
+    <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 opacity-15 bg-[var(--bg-base)]">
       <MapIcon size={80} />
       <p className="font-serif italic text-lg tracking-widest uppercase">Esperando mapa...</p>
     </div>
   );
 
   return (
-    <div className="relative w-full h-full bg-[#0D0704] overflow-hidden"
+    <div className="relative w-full h-full bg-[var(--bg-base)] overflow-hidden"
       onClick={onMapClick}
       style={{ cursor: activeTool === 'HOTSPOT' ? 'crosshair' : 'default' }}>
       <div className="relative bg-contain bg-center bg-no-repeat w-full h-full"
@@ -755,7 +814,7 @@ function MapWithTokens({
             onMouseDown={(e) => { if (onTokenMouseDown) { e.stopPropagation(); onTokenMouseDown(e, t.id); } }}
             style={{ left: `${t.x}%`, top: `${t.y}%`, position: 'absolute', width: '4.5%', minWidth: '30px', maxWidth: '65px', transform: 'translate(-50%, -50%)', zIndex: 30 }}
             className={`aspect-square rounded-full border-2 shadow-2xl flex items-center justify-center transition-all duration-200
-              ${t.type === 'Enemigo' ? 'border-red-600 bg-red-950/80' : t.type === 'JUGADOR' ? 'border-[#C5A059] bg-black' : 'border-blue-500 bg-blue-900/80'}
+              ${t.type === 'Enemigo' ? 'border-red-600 bg-red-950/80' : t.type === 'JUGADOR' ? 'border-[var(--accent)] bg-black' : 'border-blue-500 bg-blue-900/80'}
               ${selectedToken === t.id ? 'ring-4 ring-white scale-110 z-50' : ''}
               ${isDM ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}>
             {t.image_url
@@ -771,8 +830,8 @@ function MapWithTokens({
             className="z-[100] group cursor-pointer"
             onClick={(e) => { e.stopPropagation(); onHotspotClick?.(hs); }}>
             <div className={`w-5 h-5 rotate-45 border-2 shadow-lg transition-all hover:scale-125 animate-pulse
-              ${hs.type === 'scene' ? 'bg-purple-600 border-purple-300' : 'bg-[#C5A059] border-white'}`} />
-            <div className="absolute left-6 -top-2 bg-[#1C1008]/95 border border-[#C5A059]/40 px-2 py-1 text-[9px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap text-white z-50 pointer-events-none">
+              ${hs.type === 'scene' ? 'bg-purple-600 border-purple-300' : 'bg-[var(--accent)] border-white'}`} />
+            <div className="absolute left-6 -top-2 bg-[var(--bg-panel)]/95 border border-[var(--accent)]/40 px-2 py-1 text-[9px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap text-white z-50 pointer-events-none">
               {hs.type === 'scene' ? '🎭' : '🗺️'} {hs.label}
             </div>
           </div>
@@ -794,9 +853,9 @@ function ChatPanel({ authorName, isDM, compact = false }: {
 
   return (
     <div className={`flex flex-col ${compact ? 'h-full' : 'flex-1'} min-h-0 bg-[#150D08]`}>
-      <div className="px-3 py-2 flex items-center gap-2 border-b border-[#C5A059]/15 flex-shrink-0 bg-[#1C1008]">
-        <MessageSquare size={11} className="text-[#C5A059]" />
-        <span className="text-[9px] font-black uppercase tracking-widest text-[#C5A059]/60">
+      <div className="px-3 py-2 flex items-center gap-2 border-b border-[var(--accent)]/15 flex-shrink-0 bg-[var(--bg-panel)]">
+        <MessageSquare size={11} className="text-[var(--accent)]" />
+        <span className="text-[9px] font-black uppercase tracking-widest text-[var(--accent)]/60">
           {isDM ? 'Crónicas del Mundo' : `Chat · ${authorName}`}
         </span>
       </div>
@@ -807,11 +866,11 @@ function ChatPanel({ authorName, isDM, compact = false }: {
         )}
         {messages.map(msg => (
           <div key={msg.id} className={`text-[10px] px-2 py-1.5 border-l-2 rounded-r
-            ${msg.type === 'roll'   ? 'border-[#C5A059] bg-[#C5A059]/8' :
+            ${msg.type === 'roll'   ? 'border-[var(--accent)] bg-[var(--accent)]/8' :
               msg.type === 'secret' ? 'border-purple-500 bg-purple-900/15' :
               msg.type === 'system' ? 'border-blue-500 bg-blue-900/10' :
               'border-white/10 bg-white/3'}`}>
-            <span className="font-bold text-[#C5A059]">{msg.author}: </span>
+            <span className="font-bold text-[var(--accent)]">{msg.author}: </span>
             {(msg.type === 'roll' || msg.type === 'secret') ? (
               <span className="italic text-[#D7CCC8]/60">
                 {msg.content} →{' '}
@@ -823,18 +882,18 @@ function ChatPanel({ authorName, isDM, compact = false }: {
                 {msg.type === 'secret' && <span className="text-purple-400 ml-1">[🔒 DM]</span>}
               </span>
             ) : (
-              <span className="text-[#D7CCC8]/75">{msg.content}</span>
+              <span className="text-[var(--text-main)]/75">{msg.content}</span>
             )}
           </div>
         ))}
         <div ref={endRef} />
       </div>
 
-      <div className="p-2 bg-[#1C1008] border-t border-white/5 flex-shrink-0 space-y-1.5">
+      <div className="p-2 bg-[var(--bg-panel)] border-t border-white/5 flex-shrink-0 space-y-1.5">
         {isDM && (
           <div className="flex gap-1">
             <button onClick={() => rollPublic()}
-              className="flex-1 py-1 border border-[#C5A059]/25 text-[#C5A059] text-[8px] font-black uppercase hover:bg-[#C5A059]/10 flex items-center justify-center gap-1">
+              className="flex-1 py-1 border border-[var(--accent)]/25 text-[var(--accent)] text-[8px] font-black uppercase hover:bg-[var(--accent)]/10 flex items-center justify-center gap-1">
               <Dices size={10} /> D20
             </button>
             <button onClick={async () => {
@@ -850,10 +909,10 @@ function ChatPanel({ authorName, isDM, compact = false }: {
         <div className="flex gap-1.5">
           <input value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && send()}
-            className="flex-1 bg-[#2D1B14] border border-white/8 px-2 py-1.5 text-[10px] outline-none focus:border-[#C5A059]/50 font-serif italic placeholder-white/20"
+            className="flex-1 bg-[var(--bg-input)] border border-white/8 px-2 py-1.5 text-[10px] outline-none focus:border-[var(--accent)]/50 font-serif italic placeholder-white/20"
             placeholder={isDM ? 'Narrar...' : 'Hablar...'} />
           <button onClick={send}
-            className="px-2.5 bg-[#C5A059]/15 border border-[#C5A059]/25 text-[#C5A059] hover:bg-[#C5A059] hover:text-black transition-all">
+            className="px-2.5 bg-[var(--accent)]/15 border border-[var(--accent)]/25 text-[var(--accent)] hover:bg-[var(--accent)] hover:text-black transition-all">
             <ChevronUp size={13} />
           </button>
         </div>
@@ -891,12 +950,12 @@ function PlayerSelector({ players, selectedId, onSelect }: {
   );
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-8 p-12">
-      <h2 className="font-title text-3xl font-bold tracking-widest text-[#C5A059]">¿Quién eres?</h2>
+      <h2 className="font-title text-3xl font-bold tracking-widest text-[var(--accent)]">¿Quién eres?</h2>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-5 w-full max-w-2xl">
         {players.map(p => (
           <Link key={p.id} to="/play" onClick={() => onSelect(p.id)}
             className={`flex flex-col items-center gap-3 p-6 border transition-all rounded-sm ${
-              selectedId === p.id ? 'border-[#C5A059] bg-[#C5A059]/10' : 'border-white/8 bg-[#2D1B14] hover:border-[#C5A059]/50'
+              selectedId === p.id ? 'border-[var(--accent)] bg-[var(--accent)]/10' : 'border-white/8 bg-[var(--bg-input)] hover:border-[var(--accent)]/50'
             }`}>
             {p.image_url ? (
               <img src={p.image_url} className="w-20 h-20 rounded-full object-cover border-2" style={{ borderColor: p.avatar_color }} alt={p.name} />
@@ -938,18 +997,18 @@ function SceneView({ sceneData, onHotspotClick }: {
           className="z-30 group cursor-pointer"
           onClick={() => onHotspotClick?.(hs)}>
           <div className={`w-5 h-5 rotate-45 border-2 shadow-lg transition-all animate-pulse hover:scale-125
-            ${hs.type === 'scene' ? 'bg-purple-500/80 border-purple-300' : 'bg-[#C5A059]/80 border-yellow-300'}`} />
-          <div className="absolute left-6 -top-2 bg-[#1C1008]/90 border border-[#C5A059]/50 px-2 py-0.5 text-[8px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap text-white z-50 pointer-events-none">
+            ${hs.type === 'scene' ? 'bg-purple-500/80 border-purple-300' : 'bg-[var(--accent)]/80 border-yellow-300'}`} />
+          <div className="absolute left-6 -top-2 bg-[var(--bg-panel)]/90 border border-[var(--accent)]/50 px-2 py-0.5 text-[8px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap text-white z-50 pointer-events-none">
             {hs.type === 'scene' ? '🎭' : '🗺️'} {hs.label}
-            <span className="text-[#C5A059] ml-1">← portal</span>
+            <span className="text-[var(--accent)] ml-1">← portal</span>
           </div>
         </div>
       ))}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[88%] max-w-2xl p-5 bg-[#1C1008]/92 backdrop-blur-sm border-t-4 border-[#C5A059]">
-        <div className="absolute -top-6 left-6 bg-[#C5A059] text-[#1C1008] px-5 py-1 text-[10px] font-black uppercase tracking-[0.3em]">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[88%] max-w-2xl p-5 bg-[var(--bg-panel)]/92 backdrop-blur-sm border-t-4 border-[var(--accent)]">
+        <div className="absolute -top-6 left-6 bg-[var(--accent)] text-[var(--bg-panel)] px-5 py-1 text-[10px] font-black uppercase tracking-[0.3em]">
           {sceneData.speaker || 'Narrador'}
         </div>
-        <p className="text-[#D7CCC8] font-serif text-lg leading-relaxed">{sceneData.dialogue}</p>
+        <p className="text-[var(--text-main)] font-serif text-lg leading-relaxed">{sceneData.dialogue}</p>
       </div>
     </div>
   );
@@ -1102,7 +1161,7 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
   );
 
   return (
-    <div className="flex h-full w-full bg-[#0D0704] relative overflow-hidden">
+    <div className="flex h-full w-full bg-[var(--bg-base)] relative overflow-hidden">
 
       {/* ── CENTRO: Visor Principal Expandido ── */}
       <main className="flex-1 relative overflow-hidden">
@@ -1110,31 +1169,36 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
         {/* 🛡️ Botón Flotante del Operativo */}
         <div className="absolute top-4 left-4 z-[200]">
           <button onClick={() => setShowSheet(!showSheet)}
-            className={`p-3 rounded-sm border shadow-2xl transition-all ${showSheet ? 'bg-[#C5A059] text-black border-[#C5A059]' : 'bg-[#1C1008] text-[#C5A059] border-[#C5A059]/50 hover:bg-[#C5A059] hover:text-black'}`}>
+            className={`p-3 rounded-sm border shadow-2xl transition-all ${showSheet ? 'bg-[var(--accent)] text-black border-[var(--accent)]' : 'bg-[var(--bg-panel)] text-[var(--accent)] border-[var(--accent)]/50 hover:bg-[var(--accent)] hover:text-black'}`}>
             <User size={20} />
           </button>
         </div>
 
         {/* 🛡️ Módulo de Estado Oculto */}
         {showSheet && (
-          <div className="absolute top-16 left-4 z-[200] w-[260px] max-h-[85vh] flex flex-col bg-[#1C1008]/95 backdrop-blur-md border border-[#C5A059]/30 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="absolute top-16 left-4 z-[200] w-[260px] max-h-[85vh] flex flex-col bg-[var(--bg-panel)]/95 backdrop-blur-md border border-[var(--accent)]/30 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             
+            {/* 🛡️ Selector de Atmósfera */}
+            <div className="p-2 border-b border-[var(--accent)]/15 flex justify-center bg-black/40">
+              <ThemeSwitcher />
+            </div>
+
             {/* Selector de Entidad */}
             {ownedPlayers.length > 1 && (
-              <div className="p-2 bg-black/60 border-b border-[#C5A059]/20">
+              <div className="p-2 bg-black/60 border-b border-[var(--accent)]/20">
                 <select value={playerId} onChange={e => { onSwitchPlayer?.(e.target.value); setShowSheet(false); }}
-                  className="w-full bg-transparent text-[#C5A059] text-[10px] uppercase font-black outline-none cursor-pointer">
+                  className="w-full bg-transparent text-[var(--accent)] text-[10px] uppercase font-black outline-none cursor-pointer">
                   {ownedPlayers.map(p => <option key={p.id} value={p.id} className="bg-black">{p.name}</option>)}
                 </select>
               </div>
             )}
 
             {/* Ficha del Personaje */}
-            <div className="p-4 flex flex-col items-center gap-2 border-b border-[#C5A059]/15 flex-shrink-0">
+            <div className="p-4 flex flex-col items-center gap-2 border-b border-[var(--accent)]/15 flex-shrink-0">
               {player?.image_url ? (
-                <img src={player.image_url} className="w-16 h-16 rounded-full object-cover border-2 border-[#C5A059]" alt={player.name} />
+                <img src={player.image_url} className="w-16 h-16 rounded-full object-cover border-2 border-[var(--accent)]" alt={player.name} />
               ) : (
-                <div className="w-16 h-16 rounded-full border-2 border-[#C5A059] flex items-center justify-center text-2xl font-bold font-title text-[#C5A059]">
+                <div className="w-16 h-16 rounded-full border-2 border-[var(--accent)] flex items-center justify-center text-2xl font-bold font-title text-[var(--accent)]">
                   {player?.name?.charAt(0) ?? '?'}
                 </div>
               )}
