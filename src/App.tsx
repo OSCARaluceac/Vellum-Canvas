@@ -129,10 +129,10 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 // ─── MATRIZ TÁCTICA DE ATMÓSFERAS ─────────────────────────────────────────────
 export const PALETTES = {
-  classic: { base: '#0D0704', panel: '#1C1008', input: '#2D1B14', accent: '#C5A059', text: '#D7CCC8' },
-  arcane:  { base: '#070913', panel: '#111526', input: '#1C223D', accent: '#8B9DF2', text: '#D8DCE8' },
-  forest:  { base: '#050A07', panel: '#0D1711', input: '#16261C', accent: '#A3B18A', text: '#DADED4' },
-  gothic:  { base: '#0A0505', panel: '#170B0B', input: '#241111', accent: '#C82A2A', text: '#E8D8D8' }
+  classic: { base: '13 7 4', panel: '28 16 8', input: '45 27 20', accent: '197 160 89', text: '215 204 200' },
+  arcane:  { base: '7 9 19', panel: '17 21 38', input: '28 34 61', accent: '139 157 242', text: '216 220 232' },
+  forest:  { base: '5 10 7', panel: '13 23 17', input: '22 38 28', accent: '163 177 138', text: '218 222 212' },
+  gothic:  { base: '10 5 5', panel: '23 11 11', input: '36 17 17', accent: '200 42 42', text: '232 216 216' }
 };
 
 export function applyPalette(key: keyof typeof PALETTES) {
@@ -154,8 +154,8 @@ export function ThemeSwitcher() {
           key={key}
           onClick={() => applyPalette(key)}
           title={`Activar ${key}`}
-          className="w-4 h-4 rounded-full border border-white/20 transition-transform hover:scale-125"
-          style={{ backgroundColor: PALETTES[key].accent }}
+          className="w-4 h-4 rounded-full border border-white/20 transition-transform hover:scale-125 shadow-md"
+          style={{ backgroundColor: `rgb(${PALETTES[key].accent})` }}
         />
       ))}
     </div>
@@ -438,36 +438,36 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserAccount, isDM: boolean) 
   };
 
   return (
-    <div className="h-screen w-screen bg-[#0D0704] flex items-center justify-center">
+    <div className="h-screen w-screen bg-[rgb(var(--bg-base))] flex items-center justify-center">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;1,400&display=swap');
         .font-display { font-family: 'Cinzel Decorative', serif; }
         .font-serif { font-family: 'EB Garamond', Georgia, serif; }
         .font-title { font-family: 'Cinzel', serif; }
       `}</style>
-      <div className="w-full max-w-sm px-8 py-10 bg-[#1C1008] border border-[#C5A059]/30 shadow-[0_0_60px_rgba(0,0,0,0.8)] flex flex-col items-center gap-6">
+      <div className="w-full max-w-sm px-8 py-10 bg-[rgb(var(--bg-panel))] border border-[rgb(var(--accent)/0.30)] shadow-[0_0_60px_rgba(0,0,0,0.8)] flex flex-col items-center gap-6">
         <div className="text-center">
-          <h1 className="font-display text-3xl font-black text-[#C5A059] tracking-tight">VELLUM</h1>
-          <p className="text-[9px] font-title uppercase tracking-[0.4em] text-[#C5A059]/40 mt-1">Virtual Tabletop</p>
+          <h1 className="font-display text-3xl font-black text-[rgb(var(--accent))] tracking-tight">VELLUM</h1>
+          <p className="text-[9px] font-title uppercase tracking-[0.4em] text-[rgb(var(--accent)/0.40)] mt-1">Virtual Tabletop</p>
         </div>
 
         <div className="w-full space-y-3">
           <div>
-            <label className="text-[8px] font-black uppercase text-[#C5A059]/60 tracking-widest block mb-1">Nombre de usuario</label>
+            <label className="text-[8px] font-black uppercase text-[rgb(var(--accent)/0.60)] tracking-widest block mb-1">Nombre de usuario</label>
             <input
               value={username} onChange={e => setUsername(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handle()}
               placeholder="Tu nombre..."
-              className="w-full bg-[#2D1B14] border border-white/10 px-3 py-2 text-sm font-serif text-[#D7CCC8] outline-none focus:border-[#C5A059]/60 placeholder-white/20"
+              className="w-full bg-[rgb(var(--bg-input))] border border-white/10 px-3 py-2 text-sm font-serif text-[rgb(var(--text-main))] outline-none focus:border-[rgb(var(--accent)/0.60)] placeholder-white/20"
             />
           </div>
           <div>
-            <label className="text-[8px] font-black uppercase text-[#C5A059]/60 tracking-widest block mb-1">Contraseña</label>
+            <label className="text-[8px] font-black uppercase text-[rgb(var(--accent)/0.60)] tracking-widest block mb-1">Contraseña</label>
             <input
               type="password" value={password} onChange={e => setPassword(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handle()}
               placeholder="••••••••"
-              className="w-full bg-[#2D1B14] border border-white/10 px-3 py-2 text-sm font-serif text-[#D7CCC8] outline-none focus:border-[#C5A059]/60 placeholder-white/20"
+              className="w-full bg-[rgb(var(--bg-input))] border border-white/10 px-3 py-2 text-sm font-serif text-[rgb(var(--text-main))] outline-none focus:border-[rgb(var(--accent)/0.60)] placeholder-white/20"
             />
           </div>
         </div>
@@ -475,7 +475,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserAccount, isDM: boolean) 
         {error && <p className="text-red-400 text-[10px] font-black uppercase tracking-wide">{error}</p>}
 
         <button onClick={handle} disabled={loading}
-          className="w-full py-3 bg-[#C5A059] text-[#1C1008] font-black text-xs uppercase tracking-widest hover:bg-white transition-all disabled:opacity-40">
+          className="w-full py-3 bg-[rgb(var(--accent))] text-[rgb(var(--bg-panel))] font-black text-xs uppercase tracking-widest hover:bg-white transition-all disabled:opacity-40">
           {loading ? 'Accediendo...' : 'Entrar al mundo'}
         </button>
 
@@ -503,15 +503,15 @@ function UserCharactersPanel({ user, players, onSelectPlayer, selectedPlayerId, 
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-6 p-10">
       <div className="text-center">
-        <p className="text-[8px] uppercase tracking-[0.4em] text-[#C5A059]/50 font-black mb-1">Bienvenido</p>
-        <h2 className="font-title text-2xl font-bold text-[#C5A059]">{user.username}</h2>
+        <p className="text-[8px] uppercase tracking-[0.4em] text-[rgb(var(--accent)/0.50)] font-black mb-1">Bienvenido</p>
+        <h2 className="font-title text-2xl font-bold text-[rgb(var(--accent))]">{user.username}</h2>
       </div>
 
       {myPlayers.length === 0 ? (
         <div className="text-center opacity-30 py-10">
           <User size={48} className="mx-auto mb-3" />
           <p className="font-serif italic">El DM aún no te ha asignado ningún personaje.</p>
-          <p className="text-[9px] mt-2 opacity-60">Dile al DM tu nombre de usuario: <span className="text-[#C5A059]">{user.username}</span></p>
+          <p className="text-[9px] mt-2 opacity-60">Dile al DM tu nombre de usuario: <span className="text-[rgb(var(--accent))]">{user.username}</span></p>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-2xl">
@@ -519,8 +519,8 @@ function UserCharactersPanel({ user, players, onSelectPlayer, selectedPlayerId, 
             <Link key={p.id} to="/play" onClick={() => onSelectPlayer(p.id)}
               className={`flex flex-col items-center gap-3 p-6 border transition-all ${
                 selectedPlayerId === p.id
-                  ? 'border-[#C5A059] bg-[#C5A059]/10'
-                  : 'border-white/8 bg-[#2D1B14] hover:border-[#C5A059]/50'
+                  ? 'border-[rgb(var(--accent))] bg-[rgb(var(--accent)/0.10)]'
+                  : 'border-white/8 bg-[rgb(var(--bg-input))] hover:border-[rgb(var(--accent)/0.50)]'
               }`}>
               {p.image_url ? (
                 <img src={p.image_url} className="w-16 h-16 rounded-full object-cover border-2" style={{ borderColor: p.avatar_color }} alt={p.name} />
@@ -541,7 +541,7 @@ function UserCharactersPanel({ user, players, onSelectPlayer, selectedPlayerId, 
       )}
 
       <p className="text-[8px] text-white/20 font-serif italic">
-        Tu ID de usuario: <span className="text-[#C5A059]/40 font-mono">{user.username}</span>
+        Tu ID de usuario: <span className="text-[rgb(var(--accent)/0.40)] font-mono">{user.username}</span>
       </p>
 
       <button onClick={onBack}
@@ -696,11 +696,11 @@ function VellumLayout() {
     <div className="h-screen w-screen flex flex-col bg-[var(--bg-panel)] text-[var(--text-main)] overflow-hidden font-sans select-none relative">
       <style>{`
         :root {
-          --bg-base: #0D0704;
-          --bg-panel: #1C1008;
-          --bg-input: #2D1B14;
-          --accent: #C5A059;
-          --text-main: #D7CCC8;
+          --bg-base: 13 7 4;
+          --bg-panel: 28 16 8;
+          --bg-input: 45 27 20;
+          --accent: 197 160 89;
+          --text-main: 215 204 200;
         }
 
         /* Clases de utilidad vinculadas a las variables */
@@ -852,7 +852,7 @@ function ChatPanel({ authorName, isDM, compact = false }: {
   const [secretResult, setSecretResult] = useState<number | null>(null);
 
   return (
-    <div className={`flex flex-col ${compact ? 'h-full' : 'flex-1'} min-h-0 bg-[#150D08]`}>
+    <div className={`flex flex-col ${compact ? 'h-full' : 'flex-1'} min-h-0 bg-[rgb(21,13,8)]`}>
       <div className="px-3 py-2 flex items-center gap-2 border-b border-[var(--accent)]/15 flex-shrink-0 bg-[var(--bg-panel)]">
         <MessageSquare size={11} className="text-[var(--accent)]" />
         <span className="text-[9px] font-black uppercase tracking-widest text-[var(--accent)]/60">
@@ -872,7 +872,7 @@ function ChatPanel({ authorName, isDM, compact = false }: {
               'border-white/10 bg-white/3'}`}>
             <span className="font-bold text-[var(--accent)]">{msg.author}: </span>
             {(msg.type === 'roll' || msg.type === 'secret') ? (
-              <span className="italic text-[#D7CCC8]/60">
+              <span className="italic text-[rgb(var(--text-main)/0.60)]">
                 {msg.content} →{' '}
                 <span className={`font-black text-base ${
                   msg.roll_result === msg.roll_max ? 'text-yellow-400' :
@@ -1210,18 +1210,18 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
                   <span className="font-serif text-yellow-400 font-bold text-sm">🪙 {player?.gold ?? 0}</span>
                 </div>
               </div>
-              <button onClick={handleRoll} className="w-full py-2 bg-[#2D1B14] border border-[#C5A059]/30 hover:border-[#C5A059] flex flex-col items-center gap-0.5 transition-all mt-1">
-                <Dices size={16} className="text-[#C5A059]" />
-                <span className="text-[8px] font-black uppercase text-[#C5A059]">Tirar d20</span>
+              <button onClick={handleRoll} className="w-full py-2 bg-[rgb(var(--bg-input))] border border-[rgb(var(--accent)/0.30)] hover:border-[rgb(var(--accent))] flex flex-col items-center gap-0.5 transition-all mt-1">
+                <Dices size={16} className="text-[rgb(var(--accent))]" />
+                <span className="text-[8px] font-black uppercase text-[rgb(var(--accent))]">Tirar d20</span>
                 {lastRoll !== null && <span className="text-lg font-title font-bold text-white">{lastRoll}</span>}
               </button>
             </div>
 
             {/* Navegación Bio/Inv */}
-            <div className="flex border-b border-[#C5A059]/10 flex-shrink-0">
+            <div className="flex border-b border-[rgb(var(--accent)/0.10)] flex-shrink-0">
               {([['inv', 'Inv', Package], ['bio', 'Bio', PenLine]] as const).map(([tab, label, Icon]) => (
                 <button key={tab} onClick={() => setActiveTab(tab as any)}
-                  className={`flex-1 py-2 flex flex-col items-center gap-0.5 transition-all ${activeTab === tab ? 'text-[#C5A059] bg-[#C5A059]/10' : 'text-white/30 hover:text-white/60'}`}>
+                  className={`flex-1 py-2 flex flex-col items-center gap-0.5 transition-all ${activeTab === tab ? 'text-[rgb(var(--accent))] bg-[rgb(var(--accent)/0.10)]' : 'text-white/30 hover:text-white/60'}`}>
                   <Icon size={12} />
                   <span className="text-[7px] font-black uppercase">{label}</span>
                 </button>
@@ -1232,17 +1232,17 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
             <div className="flex-1 overflow-hidden flex flex-col min-h-0">
               {activeTab === 'inv' && (
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1.5">
-                  <p className="text-[8px] font-black uppercase text-[#C5A059]/60 tracking-widest">Inventario ({inventory.length})</p>
+                  <p className="text-[8px] font-black uppercase text-[rgb(var(--accent)/0.60)] tracking-widest">Inventario ({inventory.length})</p>
                   {inventory.length === 0 && <p className="text-center text-[8px] italic opacity-20 py-6 font-serif">Bolsas vacías</p>}
                   {inventory.map(inv => (
-                    <div key={inv.id} className="bg-[#2D1B14] border border-white/5 p-2 group hover:border-[#C5A059]/30 transition-all">
+                    <div key={inv.id} className="bg-[rgb(var(--bg-input))] border border-white/5 p-2 group hover:border-[rgb(var(--accent)/0.30)] transition-all">
                       <div className="flex items-center gap-1.5">
                         <span className="text-base leading-none">{inv.shop_items?.icon || '📦'}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[9px] font-bold truncate text-[#D7CCC8]">{inv.shop_items?.name}</p>
-                          <p className="text-[7px] text-[#C5A059]/50">×{inv.quantity} · vender {inv.shop_items?.sell_price ?? '?'}🪙</p>
+                          <p className="text-[9px] font-bold truncate text-[rgb(var(--text-main))]">{inv.shop_items?.name}</p>
+                          <p className="text-[7px] text-[rgb(var(--accent)/0.50)]">×{inv.quantity} · vender {inv.shop_items?.sell_price ?? '?'}🪙</p>
                         </div>
-                        <button onClick={() => handleSell(inv)} className="opacity-0 group-hover:opacity-100 text-[7px] bg-[#C5A059]/10 border border-[#C5A059]/30 px-1.5 py-0.5 text-[#C5A059] hover:bg-[#C5A059] hover:text-black transition-all flex-shrink-0">
+                        <button onClick={() => handleSell(inv)} className="opacity-0 group-hover:opacity-100 text-[7px] bg-[rgb(var(--accent)/0.10)] border border-[rgb(var(--accent)/0.30)] px-1.5 py-0.5 text-[rgb(var(--accent))] hover:bg-[rgb(var(--accent))] hover:text-black transition-all flex-shrink-0">
                           Vender
                         </button>
                       </div>
@@ -1252,18 +1252,18 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
               )}
               {activeTab === 'bio' && (
                 <div className="flex-1 flex flex-col overflow-hidden p-3 gap-2">
-                  <p className="text-[8px] font-black uppercase text-[#C5A059]/60 tracking-widest flex-shrink-0">Diario</p>
+                  <p className="text-[8px] font-black uppercase text-[rgb(var(--accent)/0.60)] tracking-widest flex-shrink-0">Diario</p>
                   <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 min-h-0">
                     {bio.map(entry => (
-                      <div key={entry.id} className={`p-2 border-l-2 text-[9px] font-serif leading-relaxed ${entry.is_dm ? 'border-[#C5A059] text-[#C5A059]/80 bg-[#C5A059]/5 italic' : 'border-white/20 text-[#D7CCC8]/75'}`}>
+                      <div key={entry.id} className={`p-2 border-l-2 text-[9px] font-serif leading-relaxed ${entry.is_dm ? 'border-[rgb(var(--accent))] text-[rgb(var(--accent)/0.80)] bg-[rgb(var(--accent)/0.05)] italic' : 'border-white/20 text-[rgb(var(--text-main)/0.75)]'}`}>
                         <span className="text-[6px] font-black uppercase opacity-40 block mb-0.5 not-italic">{entry.author}</span>
                         {entry.content}
                       </div>
                     ))}
                   </div>
                   <div className="flex-shrink-0 border-t border-white/5 pt-2 space-y-1.5">
-                    <textarea value={bioInput} onChange={e => setBioInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) addBioEntry(); }} placeholder="Escribe... (Ctrl+Enter)" rows={2} className="w-full bg-[#2D1B14] border border-white/8 p-2 text-[9px] font-serif italic outline-none resize-none focus:border-[#C5A059] text-[#D7CCC8]" />
-                    <button onClick={addBioEntry} disabled={!bioInput.trim()} className="w-full py-1.5 bg-[#C5A059]/15 border border-[#C5A059]/30 text-[#C5A059] text-[8px] font-black uppercase hover:bg-[#C5A059] hover:text-black transition-all flex items-center justify-center gap-1">
+                    <textarea value={bioInput} onChange={e => setBioInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) addBioEntry(); }} placeholder="Escribe... (Ctrl+Enter)" rows={2} className="w-full bg-[rgb(var(--bg-input))] border border-white/8 p-2 text-[9px] font-serif italic outline-none resize-none focus:border-[rgb(var(--accent))] text-[rgb(var(--text-main))]" />
+                    <button onClick={addBioEntry} disabled={!bioInput.trim()} className="w-full py-1.5 bg-[rgb(var(--accent)/0.15)] border border-[rgb(var(--accent)/0.30)] text-[rgb(var(--accent))] text-[8px] font-black uppercase hover:bg-[rgb(var(--accent))] hover:text-black transition-all flex items-center justify-center gap-1">
                       <PenLine size={10} /> Anotar
                     </button>
                   </div>
@@ -1280,15 +1280,15 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
         {/* Tienda */}
         {mode === 'SHOP' && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="w-full max-w-2xl h-[78%] bg-[#1C1008]/97 border-2 border-[#C5A059]/50 shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden">
-              <header className="p-4 border-b border-[#C5A059]/20 flex justify-between items-center bg-[#C5A059]/5 flex-shrink-0">
+            <div className="w-full max-w-2xl h-[78%] bg-[rgb(var(--bg-panel)/0.97)] border-2 border-[rgb(var(--accent)/0.50)] shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden">
+              <header className="p-4 border-b border-[rgb(var(--accent)/0.20)] flex justify-between items-center bg-[rgb(var(--accent)/0.05)] flex-shrink-0">
                 <div>
-                  <h3 className="font-title text-[#C5A059] text-sm font-black uppercase italic">Terminal de Suministros</h3>
+                  <h3 className="font-title text-[rgb(var(--accent))] text-sm font-black uppercase italic">Terminal de Suministros</h3>
                   <p className="text-[8px] text-white/40 uppercase tracking-widest">Catálogo de equipo</p>
                 </div>
                 <div className="text-right">
                   <p className="text-[8px] uppercase opacity-40 font-black">Fondos</p>
-                  <p className="text-[#C5A059] font-title font-bold text-xl">🪙 {player?.gold ?? 0}</p>
+                  <p className="text-[rgb(var(--accent))] font-title font-bold text-xl">🪙 {player?.gold ?? 0}</p>
                 </div>
               </header>
 
@@ -1324,15 +1324,15 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
               {/* Inventario dentro de tienda */}
               {inventory.length > 0 && (
                 <div className="border-t border-white/5 p-3 bg-black/30 flex-shrink-0">
-                  <p className="text-[7px] font-black uppercase text-[#C5A059]/50 mb-2">Tu inventario actual</p>
+                  <p className="text-[7px] font-black uppercase text-[rgb(var(--accent)/0.50)] mb-2">Tu inventario actual</p>
                   <div className="flex flex-wrap gap-1.5">
                     {inventory.map(inv => (
                       <div key={inv.id}
-                        className="flex items-center gap-1 bg-[#2D1B14] border border-white/8 px-2 py-1 group cursor-default">
+                        className="flex items-center gap-1 bg-[rgb(var(--bg-input))] border border-white/8 px-2 py-1 group cursor-default">
                         <span className="text-xs">{inv.shop_items?.icon}</span>
                         <span className="text-[8px] text-white/60">{inv.shop_items?.name} ×{inv.quantity}</span>
                         <button onClick={() => handleSell(inv)}
-                          className="ml-1 opacity-0 group-hover:opacity-100 text-[7px] text-[#C5A059] hover:text-white transition-all">
+                          className="ml-1 opacity-0 group-hover:opacity-100 text-[7px] text-[rgb(var(--accent))] hover:text-white transition-all">
                           vender
                         </button>
                       </div>
@@ -1346,7 +1346,7 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
 
         {/* Feedback toast */}
         {buyFeedback && (
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[200] bg-[#1C1008]/97 border border-[#C5A059] px-8 py-3 text-[10px] font-black text-[#C5A059] uppercase tracking-[0.3em] shadow-2xl">
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[200] bg-[rgb(var(--bg-panel)/0.97)] border border-[rgb(var(--accent))] px-8 py-3 text-[10px] font-black text-[rgb(var(--accent))] uppercase tracking-[0.3em] shadow-2xl">
             {buyFeedback}
           </div>
         )}
@@ -1354,7 +1354,7 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
 
       {/* ── DERECHA: Chat Ampliado a 340px ── */}
       <aside style={{ width: '340px', minWidth: '340px' }}
-        className="bg-[#150D08] border-l border-white/5 flex flex-col shadow-2xl z-20">
+        className="bg-[rgb(21,13,8)] border-l border-white/5 flex flex-col shadow-2xl z-20">
         <ChatPanel authorName={player?.name ?? 'Jugador'} isDM={false} compact />
       </aside>
     </div>
@@ -1377,9 +1377,9 @@ function DMInventoryInspector({ playerId, playerName }: { playerId: string; play
   };
 
   return (
-    <div className="bg-[#1C1008]/50 border border-[#C5A059]/20 p-4 rounded-sm animate-in">
-      <header className="flex justify-between items-center mb-3 border-b border-[#C5A059]/10 pb-2">
-        <h4 className="text-[10px] font-black uppercase text-[#C5A059] tracking-widest">
+    <div className="bg-[rgb(var(--bg-panel)/0.50)] border border-[rgb(var(--accent)/0.20)] p-4 rounded-sm animate-in">
+      <header className="flex justify-between items-center mb-3 border-b border-[rgb(var(--accent)/0.10)] pb-2">
+        <h4 className="text-[10px] font-black uppercase text-[rgb(var(--accent))] tracking-widest">
           Inventario: {playerName}
         </h4>
         <span className="text-[8px] opacity-40 font-mono">{playerId.slice(0, 6)}</span>
