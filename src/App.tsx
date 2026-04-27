@@ -1521,13 +1521,13 @@ function MasterDashboard({ players, setPlayers }: {
 
   const saveEdit = async () => {
     if (!editingPlayer) return;
-
+    
     // 🛡️ Preparamos la carga de datos
     const payload = {
-      name: editingPlayer.name,
-      hp: editingPlayer.hp,
+      name: editingPlayer.name, 
+      hp: editingPlayer.hp, 
       max_hp: editingPlayer.max_hp,
-      gold: editingPlayer.gold,
+      gold: editingPlayer.gold, 
       avatar_color: editingPlayer.avatar_color,
       image_url: editingPlayer.image_url || null,
       owner_id: (editingPlayer as any).owner_id || null,
