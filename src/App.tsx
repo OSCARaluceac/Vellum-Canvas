@@ -129,10 +129,12 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 // ─── MATRIZ TÁCTICA DE ATMÓSFERAS ─────────────────────────────────────────────
 export const PALETTES = {
-  classic: { base: '13 7 4', panel: '28 16 8', input: '45 27 20', accent: '197 160 89', text: '215 204 200' },
-  arcane:  { base: '7 9 19', panel: '17 21 38', input: '28 34 61', accent: '139 157 242', text: '216 220 232' },
-  forest:  { base: '5 10 7', panel: '13 23 17', input: '22 38 28', accent: '163 177 138', text: '218 222 212' },
-  gothic:  { base: '10 5 5', panel: '23 11 11', input: '36 17 17', accent: '200 42 42', text: '232 216 216' }
+  classic:  { base: '13 7 4',    panel: '28 16 8',   accent: '197 160 89', text: '215 204 200' },
+  arcane:   { base: '10 10 25',  panel: '20 20 45',  accent: '140 160 255', text: '220 230 255' },
+  crimson:  { base: '15 5 5',    panel: '35 10 10',  accent: '220 40 40',   text: '240 220 220' },
+  emerald:  { base: '5 12 8',    panel: '12 25 18',  accent: '80 220 120',  text: '210 240 220' },
+  void:     { base: '5 2 10',    panel: '15 10 25',  accent: '180 80 255',  text: '230 210 255' },
+  obsidian: { base: '5 5 5',     panel: '20 20 20',  accent: '150 150 150', text: '255 255 255' }
 };
 
 export function applyPalette(key: keyof typeof PALETTES) {
@@ -140,7 +142,6 @@ export function applyPalette(key: keyof typeof PALETTES) {
   const root = document.documentElement;
   root.style.setProperty('--bg-base', p.base);
   root.style.setProperty('--bg-panel', p.panel);
-  root.style.setProperty('--bg-input', p.input);
   root.style.setProperty('--accent', p.accent);
   root.style.setProperty('--text-main', p.text);
   localStorage.setItem('vellum_palette', key);
@@ -148,14 +149,14 @@ export function applyPalette(key: keyof typeof PALETTES) {
 
 export function ThemeSwitcher() {
   return (
-    <div className="flex gap-2 p-2 bg-black/40 border border-white/5 rounded-sm">
+    <div className="flex gap-1.5 p-1.5 bg-black/40 backdrop-blur-md border border-white/5 rounded-full shadow-inner">
       {(Object.keys(PALETTES) as Array<keyof typeof PALETTES>).map((key) => (
         <button
           key={key}
           onClick={() => applyPalette(key)}
-          title={`Activar ${key}`}
-          className="w-4 h-4 rounded-full border border-white/20 transition-transform hover:scale-125 shadow-md"
+          className="w-3.5 h-3.5 rounded-full border border-white/10 hover:scale-125 transition-transform"
           style={{ backgroundColor: `rgb(${PALETTES[key].accent})` }}
+          title={key}
         />
       ))}
     </div>
@@ -693,14 +694,14 @@ function VellumLayout() {
   if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[var(--bg-panel)] text-[var(--text-main)] overflow-hidden font-sans select-none relative">
+    <div className="h-screen w-screen flex flex-col text-[var(--text-main)] overflow-hidden font-sans select-none relative" style={{ backgroundColor: 'rgb(var(--bg-panel))' }}>
       <style>{`
         :root {
           --bg-base: 13 7 4;
           --bg-panel: 28 16 8;
-          --bg-input: 45 27 20;
           --accent: 197 160 89;
           --text-main: 215 204 200;
+          --bg-input: 45 27 20;
         }
 
         /* Clases de utilidad vinculadas a las variables */
@@ -732,14 +733,16 @@ function VellumLayout() {
         </Link>
       )}
 
-      {/* Indicador de usuario + logout */}
-      <div className="fixed top-4 right-16 z-[200] flex items-center gap-4">
+      {/* Barra de mando optimizada */}
+      <div className="fixed top-4 right-4 z-[250] flex items-center gap-4 bg-black/20 p-2 pl-4 rounded-full border border-white/5 backdrop-blur-sm">
         <ThemeSwitcher />
-        <div className="flex items-center gap-2">
-          <span className="text-[8px] font-black uppercase text-[var(--accent)]/50 tracking-widest">{currentUser.username}</span>
-          <button onClick={handleLogout}
-            className="text-[8px] font-black uppercase text-white/20 hover:text-red-400 transition-colors px-2 py-1 border border-white/10 hover:border-red-400/30">
-            Salir
+        <div className="h-4 w-px bg-white/10" />
+        <div className="flex items-center gap-3">
+          <span className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: 'rgb(var(--accent))' }}>
+            {currentUser.username}
+          </span>
+          <button onClick={handleLogout} className="p-1.5 hover:text-red-500 transition-colors opacity-40 hover:opacity-100">
+            <X size={14} />
           </button>
         </div>
       </div>
@@ -1161,7 +1164,7 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
   );
 
   return (
-    <div className="flex h-full w-full bg-[var(--bg-base)] relative overflow-hidden">
+    <div className="flex h-full w-full relative overflow-hidden" style={{ backgroundColor: 'rgb(var(--bg-base))' }}>
 
       {/* ── CENTRO: Visor Principal Expandido ── */}
       <main className="flex-1 relative overflow-hidden">
