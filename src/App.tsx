@@ -127,41 +127,6 @@ const CATEGORY_ICONS: Record<string, string> = {
   weapon: '⚔️', armor: '🛡️', potion: '🧪', misc: '📦', magic: '✨', food: '🍖'
 };
 
-// ─── MATRIZ TÁCTICA DE ATMÓSFERAS ─────────────────────────────────────────────
-export const PALETTES = {
-  classic:  { base: '13 7 4',    panel: '28 16 8',   accent: '197 160 89', text: '215 204 200' },
-  arcane:   { base: '10 10 25',  panel: '20 20 45',  accent: '140 160 255', text: '220 230 255' },
-  crimson:  { base: '15 5 5',    panel: '35 10 10',  accent: '220 40 40',   text: '240 220 220' },
-  emerald:  { base: '5 12 8',    panel: '12 25 18',  accent: '80 220 120',  text: '210 240 220' },
-  void:     { base: '5 2 10',    panel: '15 10 25',  accent: '180 80 255',  text: '230 210 255' },
-  obsidian: { base: '5 5 5',     panel: '20 20 20',  accent: '150 150 150', text: '255 255 255' }
-};
-
-export function applyPalette(key: keyof typeof PALETTES) {
-  const p = PALETTES[key];
-  const root = document.documentElement;
-  root.style.setProperty('--bg-base', p.base);
-  root.style.setProperty('--bg-panel', p.panel);
-  root.style.setProperty('--accent', p.accent);
-  root.style.setProperty('--text-main', p.text);
-  localStorage.setItem('vellum_palette', key);
-}
-
-export function ThemeSwitcher() {
-  return (
-    <div className="flex gap-1.5 p-1.5 bg-black/40 backdrop-blur-md border border-white/5 rounded-full shadow-inner">
-      {(Object.keys(PALETTES) as Array<keyof typeof PALETTES>).map((key) => (
-        <button
-          key={key}
-          onClick={() => applyPalette(key)}
-          className="w-3.5 h-3.5 rounded-full border border-white/10 hover:scale-125 transition-transform"
-          style={{ backgroundColor: `rgb(${PALETTES[key].accent})` }}
-          title={key}
-        />
-      ))}
-    </div>
-  );
-}
 
 const SAMPLE_ITEMS: Partial<ShopItem>[] = [
   { name: 'Espada Corta', description: 'Hoja de acero forjado. +2 ATK', price: 50, sell_price: 25, icon: '⚔️', category: 'weapon', stock: -1 },
@@ -439,36 +404,31 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserAccount, isDM: boolean) 
   };
 
   return (
-    <div className="h-screen w-screen bg-[rgb(var(--bg-base))] flex items-center justify-center">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;1,400&display=swap');
-        .font-display { font-family: 'Cinzel Decorative', serif; }
-        .font-serif { font-family: 'EB Garamond', Georgia, serif; }
-        .font-title { font-family: 'Cinzel', serif; }
-      `}</style>
-      <div className="w-full max-w-sm px-8 py-10 bg-[rgb(var(--bg-panel))] border border-[rgb(var(--accent)/0.30)] shadow-[0_0_60px_rgba(0,0,0,0.8)] flex flex-col items-center gap-6">
+    <div className="h-screen w-screen bg-[#0E0B07] flex items-center justify-center">
+
+      <div className="w-full max-w-sm px-8 py-10 bg-[#1A1208] border border-[rgb(#B8955A/0.30)] shadow-[0_0_60px_rgba(0,0,0,0.8)] flex flex-col items-center gap-6">
         <div className="text-center">
-          <h1 className="font-display text-3xl font-black text-[rgb(var(--accent))] tracking-tight">VELLUM</h1>
-          <p className="text-[9px] font-title uppercase tracking-[0.4em] text-[rgb(var(--accent)/0.40)] mt-1">Virtual Tabletop</p>
+          <h1 className="font-display text-3xl font-black text-[#B8955A] tracking-tight">VELLUM</h1>
+          <p className="text-[9px] font-title uppercase tracking-[0.4em] text-[rgb(#B8955A/0.40)] mt-1">Virtual Tabletop</p>
         </div>
 
         <div className="w-full space-y-3">
           <div>
-            <label className="text-[8px] font-black uppercase text-[rgb(var(--accent)/0.60)] tracking-widest block mb-1">Nombre de usuario</label>
+            <label className="text-[8px] font-black uppercase text-[rgb(#B8955A/0.60)] tracking-widest block mb-1">Nombre de usuario</label>
             <input
               value={username} onChange={e => setUsername(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handle()}
               placeholder="Tu nombre..."
-              className="w-full bg-[rgb(var(--bg-input))] border border-white/10 px-3 py-2 text-sm font-serif text-[rgb(var(--text-main))] outline-none focus:border-[rgb(var(--accent)/0.60)] placeholder-white/20"
+              className="w-full bg-[#251A0E] border border-white/10 px-3 py-2 text-sm font-serif text-[#D4C9B0] outline-none focus:border-[rgb(#B8955A/0.60)] placeholder-white/20"
             />
           </div>
           <div>
-            <label className="text-[8px] font-black uppercase text-[rgb(var(--accent)/0.60)] tracking-widest block mb-1">Contraseña</label>
+            <label className="text-[8px] font-black uppercase text-[rgb(#B8955A/0.60)] tracking-widest block mb-1">Contraseña</label>
             <input
               type="password" value={password} onChange={e => setPassword(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handle()}
               placeholder="••••••••"
-              className="w-full bg-[rgb(var(--bg-input))] border border-white/10 px-3 py-2 text-sm font-serif text-[rgb(var(--text-main))] outline-none focus:border-[rgb(var(--accent)/0.60)] placeholder-white/20"
+              className="w-full bg-[#251A0E] border border-white/10 px-3 py-2 text-sm font-serif text-[#D4C9B0] outline-none focus:border-[rgb(#B8955A/0.60)] placeholder-white/20"
             />
           </div>
         </div>
@@ -476,7 +436,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserAccount, isDM: boolean) 
         {error && <p className="text-red-400 text-[10px] font-black uppercase tracking-wide">{error}</p>}
 
         <button onClick={handle} disabled={loading}
-          className="w-full py-3 bg-[rgb(var(--accent))] text-[rgb(var(--bg-panel))] font-black text-xs uppercase tracking-widest hover:bg-white transition-all disabled:opacity-40">
+          className="w-full py-3 bg-[#B8955A] text-[#1A1208] font-black text-xs uppercase tracking-widest hover:bg-white transition-all disabled:opacity-40">
           {loading ? 'Accediendo...' : 'Entrar al mundo'}
         </button>
 
@@ -504,15 +464,15 @@ function UserCharactersPanel({ user, players, onSelectPlayer, selectedPlayerId, 
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-6 p-10">
       <div className="text-center">
-        <p className="text-[8px] uppercase tracking-[0.4em] text-[rgb(var(--accent)/0.50)] font-black mb-1">Bienvenido</p>
-        <h2 className="font-title text-2xl font-bold text-[rgb(var(--accent))]">{user.username}</h2>
+        <p className="text-[8px] uppercase tracking-[0.4em] text-[rgb(#B8955A/0.50)] font-black mb-1">Bienvenido</p>
+        <h2 className="font-title text-2xl font-bold text-[#B8955A]">{user.username}</h2>
       </div>
 
       {myPlayers.length === 0 ? (
         <div className="text-center opacity-30 py-10">
           <User size={48} className="mx-auto mb-3" />
           <p className="font-serif italic">El DM aún no te ha asignado ningún personaje.</p>
-          <p className="text-[9px] mt-2 opacity-60">Dile al DM tu nombre de usuario: <span className="text-[rgb(var(--accent))]">{user.username}</span></p>
+          <p className="text-[9px] mt-2 opacity-60">Dile al DM tu nombre de usuario: <span className="text-[#B8955A]">{user.username}</span></p>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-2xl">
@@ -520,8 +480,8 @@ function UserCharactersPanel({ user, players, onSelectPlayer, selectedPlayerId, 
             <Link key={p.id} to="/play" onClick={() => onSelectPlayer(p.id)}
               className={`flex flex-col items-center gap-3 p-6 border transition-all ${
                 selectedPlayerId === p.id
-                  ? 'border-[rgb(var(--accent))] bg-[rgb(var(--accent)/0.10)]'
-                  : 'border-white/8 bg-[rgb(var(--bg-input))] hover:border-[rgb(var(--accent)/0.50)]'
+                  ? 'border-[#B8955A] bg-[rgb(#B8955A/0.10)]'
+                  : 'border-white/8 bg-[#251A0E] hover:border-[rgb(#B8955A/0.50)]'
               }`}>
               {p.image_url ? (
                 <img src={p.image_url} className="w-16 h-16 rounded-full object-cover border-2" style={{ borderColor: p.avatar_color }} alt={p.name} />
@@ -542,7 +502,7 @@ function UserCharactersPanel({ user, players, onSelectPlayer, selectedPlayerId, 
       )}
 
       <p className="text-[8px] text-white/20 font-serif italic">
-        Tu ID de usuario: <span className="text-[rgb(var(--accent)/0.40)] font-mono">{user.username}</span>
+        Tu ID de usuario: <span className="text-[rgb(#B8955A/0.40)] font-mono">{user.username}</span>
       </p>
 
       <button onClick={onBack}
@@ -593,18 +553,18 @@ function AuthScreen({ onLogin }: { onLogin: (user: any) => void }) {
   };
 
   return (
-    <div className="h-screen w-screen flex items-center justify-center bg-[var(--bg-base)] animate-in fade-in duration-700">
-      <div className="w-80 p-8 bg-[var(--bg-panel)] border-2 border-[var(--accent)]/30 shadow-2xl relative">
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--accent)] text-black px-4 py-0.5 text-[9px] font-black uppercase tracking-widest">
+    <div className="h-screen w-screen flex items-center justify-center bg-[#0E0B07] animate-in fade-in duration-700">
+      <div className="w-80 p-8 bg-[#1A1208] border-2 border-[#B8955A]/30 shadow-2xl relative">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#B8955A] text-black px-4 py-0.5 text-[9px] font-black uppercase tracking-widest">
           Vellum Access
         </div>
         <div className="space-y-4 mt-4">
           <input type="text" placeholder="ID de Operativo..." value={username} onChange={e => setUsername(e.target.value)}
-            className="w-full bg-black/40 border border-[var(--accent)]/20 p-3 text-xs text-white outline-none focus:border-[var(--accent)]" />
+            className="w-full bg-black/40 border border-[#B8955A]/20 p-3 text-xs text-white outline-none focus:border-[#B8955A]" />
           <input type="password" placeholder="Código de Acceso..." value={password} onChange={e => setPassword(e.target.value)}
-            className="w-full bg-black/40 border border-[var(--accent)]/20 p-3 text-xs text-white outline-none focus:border-[var(--accent)]" />
+            className="w-full bg-black/40 border border-[#B8955A]/20 p-3 text-xs text-white outline-none focus:border-[#B8955A]" />
           {error && <p className="text-[9px] text-red-500 italic text-center">{error}</p>}
-          <button onClick={handleAuth} className="w-full bg-[var(--accent)] text-black py-3 text-[10px] font-black uppercase hover:bg-white transition-all shadow-lg active:scale-95">
+          <button onClick={handleAuth} className="w-full bg-[#B8955A] text-black py-3 text-[10px] font-black uppercase hover:bg-white transition-all shadow-lg active:scale-95">
             Establecer Enlace
           </button>
         </div>
@@ -623,13 +583,7 @@ function VellumLayout() {
   const [playerView, setPlayerView] = useState<PlayerView | null>(null);
   const isHome = location.pathname === '/';
 
-  // Cargar preferencia al iniciar
-  useEffect(() => {
-    const saved = localStorage.getItem('vellum_palette') as keyof typeof PALETTES;
-    if (saved && PALETTES[saved]) applyPalette(saved);
-  }, []);
-
-  useEffect(() => { seedSampleItems(); }, []);
+useEffect(() => { seedSampleItems(); }, []);
 
   // Restaurar sesión de localStorage
   useEffect(() => {
@@ -694,22 +648,8 @@ function VellumLayout() {
   if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
 
   return (
-    <div className="h-screen w-screen flex flex-col text-[var(--text-main)] overflow-hidden font-sans select-none relative" style={{ backgroundColor: 'rgb(var(--bg-panel))' }}>
+    <div className="h-screen w-screen flex flex-col text-[#D4C9B0] overflow-hidden font-sans select-none relative" style={{ backgroundColor: '#1A1208' }}>
       <style>{`
-        :root {
-          --bg-base: 13 7 4;
-          --bg-panel: 28 16 8;
-          --accent: 197 160 89;
-          --text-main: 215 204 200;
-          --bg-input: 45 27 20;
-        }
-
-        /* Clases de utilidad vinculadas a las variables */
-        .bg-base { background-color: var(--bg-base); }
-        .bg-panel { background-color: var(--bg-panel); }
-        .bg-input { background-color: var(--bg-input); }
-        .text-accent { color: var(--accent); }
-        .border-accent { border-color: var(--accent); }
 
         @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap');
         .font-display { font-family: 'Cinzel Decorative', serif; }
@@ -717,17 +657,17 @@ function VellumLayout() {
         .font-title { font-family: 'Cinzel', serif; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--accent)40; border-radius: 2px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--accent); }
-        * { scrollbar-width: thin; scrollbar-color: var(--accent)40 transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #B8955A40; border-radius: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #B8955A; }
+        * { scrollbar-width: thin; scrollbar-color: #B8955A40 transparent; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .animate-in { animation: fadeIn 0.4s ease forwards; }
-        @keyframes pulse-gold { 0%,100% { box-shadow: 0 0 0 0 var(--accent)40; } 50% { box-shadow: 0 0 0 8px var(--accent)00; } }
+        @keyframes pulse-gold { 0%,100% { box-shadow: 0 0 0 0 #B8955A40; } 50% { box-shadow: 0 0 0 8px #B8955A00; } }
         .pulse-gold { animation: pulse-gold 2s infinite; }
       `}</style>
 
       {!isHome && (
-        <Link to="/" className="fixed top-4 left-4 z-[200] bg-[var(--bg-input)] border border-[var(--accent)]/50 p-2.5 rounded-full text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--bg-panel)] transition-all shadow-2xl flex items-center gap-2 group">
+        <Link to="/" className="fixed top-4 left-4 z-[200] bg-[#251A0E] border border-[#B8955A]/50 p-2.5 rounded-full text-[#B8955A] hover:bg-[#B8955A] hover:text-[#1A1208] transition-all shadow-2xl flex items-center gap-2 group">
           <Home size={18} />
           <span className="text-[9px] font-black uppercase tracking-widest hidden group-hover:inline pr-1">Nexo</span>
         </Link>
@@ -735,10 +675,8 @@ function VellumLayout() {
 
       {/* Barra de mando optimizada */}
       <div className="fixed top-4 right-4 z-[250] flex items-center gap-4 bg-black/20 p-2 pl-4 rounded-full border border-white/5 backdrop-blur-sm">
-        <ThemeSwitcher />
-        <div className="h-4 w-px bg-white/10" />
         <div className="flex items-center gap-3">
-          <span className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: 'rgb(var(--accent))' }}>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: '#B8955A' }}>
             {currentUser.username}
           </span>
           <button onClick={handleLogout} className="p-1.5 hover:text-red-500 transition-colors opacity-40 hover:opacity-100">
@@ -798,14 +736,14 @@ function MapWithTokens({
   children?: React.ReactNode;
 }) {
   if (!map?.image_url) return (
-    <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 opacity-15 bg-[var(--bg-base)]">
+    <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 opacity-15 bg-[#0E0B07]">
       <MapIcon size={80} />
       <p className="font-serif italic text-lg tracking-widest uppercase">Esperando mapa...</p>
     </div>
   );
 
   return (
-    <div className="relative w-full h-full bg-[var(--bg-base)] overflow-hidden"
+    <div className="relative w-full h-full bg-[#0E0B07] overflow-hidden"
       onClick={onMapClick}
       style={{ cursor: activeTool === 'HOTSPOT' ? 'crosshair' : 'default' }}>
       <div className="relative bg-contain bg-center bg-no-repeat w-full h-full"
@@ -817,7 +755,7 @@ function MapWithTokens({
             onMouseDown={(e) => { if (onTokenMouseDown) { e.stopPropagation(); onTokenMouseDown(e, t.id); } }}
             style={{ left: `${t.x}%`, top: `${t.y}%`, position: 'absolute', width: '4.5%', minWidth: '30px', maxWidth: '65px', transform: 'translate(-50%, -50%)', zIndex: 30 }}
             className={`aspect-square rounded-full border-2 shadow-2xl flex items-center justify-center transition-all duration-200
-              ${t.type === 'Enemigo' ? 'border-red-600 bg-red-950/80' : t.type === 'JUGADOR' ? 'border-[var(--accent)] bg-black' : 'border-blue-500 bg-blue-900/80'}
+              ${t.type === 'Enemigo' ? 'border-red-600 bg-red-950/80' : t.type === 'JUGADOR' ? 'border-[#B8955A] bg-black' : 'border-blue-500 bg-blue-900/80'}
               ${selectedToken === t.id ? 'ring-4 ring-white scale-110 z-50' : ''}
               ${isDM ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}>
             {t.image_url
@@ -833,8 +771,8 @@ function MapWithTokens({
             className="z-[100] group cursor-pointer"
             onClick={(e) => { e.stopPropagation(); onHotspotClick?.(hs); }}>
             <div className={`w-5 h-5 rotate-45 border-2 shadow-lg transition-all hover:scale-125 animate-pulse
-              ${hs.type === 'scene' ? 'bg-purple-600 border-purple-300' : 'bg-[var(--accent)] border-white'}`} />
-            <div className="absolute left-6 -top-2 bg-[var(--bg-panel)]/95 border border-[var(--accent)]/40 px-2 py-1 text-[9px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap text-white z-50 pointer-events-none">
+              ${hs.type === 'scene' ? 'bg-purple-600 border-purple-300' : 'bg-[#B8955A] border-white'}`} />
+            <div className="absolute left-6 -top-2 bg-[#1A1208]/95 border border-[#B8955A]/40 px-2 py-1 text-[9px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap text-white z-50 pointer-events-none">
               {hs.type === 'scene' ? '🎭' : '🗺️'} {hs.label}
             </div>
           </div>
@@ -856,9 +794,9 @@ function ChatPanel({ authorName, isDM, compact = false }: {
 
   return (
     <div className={`flex flex-col ${compact ? 'h-full' : 'flex-1'} min-h-0 bg-[rgb(21,13,8)]`}>
-      <div className="px-3 py-2 flex items-center gap-2 border-b border-[var(--accent)]/15 flex-shrink-0 bg-[var(--bg-panel)]">
-        <MessageSquare size={11} className="text-[var(--accent)]" />
-        <span className="text-[9px] font-black uppercase tracking-widest text-[var(--accent)]/60">
+      <div className="px-3 py-2 flex items-center gap-2 border-b border-[#B8955A]/15 flex-shrink-0 bg-[#1A1208]">
+        <MessageSquare size={11} className="text-[#B8955A]" />
+        <span className="text-[9px] font-black uppercase tracking-widest text-[#B8955A]/60">
           {isDM ? 'Crónicas del Mundo' : `Chat · ${authorName}`}
         </span>
       </div>
@@ -869,13 +807,13 @@ function ChatPanel({ authorName, isDM, compact = false }: {
         )}
         {messages.map(msg => (
           <div key={msg.id} className={`text-[10px] px-2 py-1.5 border-l-2 rounded-r
-            ${msg.type === 'roll'   ? 'border-[var(--accent)] bg-[var(--accent)]/8' :
+            ${msg.type === 'roll'   ? 'border-[#B8955A] bg-[#B8955A]/8' :
               msg.type === 'secret' ? 'border-purple-500 bg-purple-900/15' :
               msg.type === 'system' ? 'border-blue-500 bg-blue-900/10' :
               'border-white/10 bg-white/3'}`}>
-            <span className="font-bold text-[var(--accent)]">{msg.author}: </span>
+            <span className="font-bold text-[#B8955A]">{msg.author}: </span>
             {(msg.type === 'roll' || msg.type === 'secret') ? (
-              <span className="italic text-[rgb(var(--text-main)/0.60)]">
+              <span className="italic text-[rgb(#D4C9B0/0.60)]">
                 {msg.content} →{' '}
                 <span className={`font-black text-base ${
                   msg.roll_result === msg.roll_max ? 'text-yellow-400' :
@@ -885,18 +823,18 @@ function ChatPanel({ authorName, isDM, compact = false }: {
                 {msg.type === 'secret' && <span className="text-purple-400 ml-1">[🔒 DM]</span>}
               </span>
             ) : (
-              <span className="text-[var(--text-main)]/75">{msg.content}</span>
+              <span className="text-[#D4C9B0]/75">{msg.content}</span>
             )}
           </div>
         ))}
         <div ref={endRef} />
       </div>
 
-      <div className="p-2 bg-[var(--bg-panel)] border-t border-white/5 flex-shrink-0 space-y-1.5">
+      <div className="p-2 bg-[#1A1208] border-t border-white/5 flex-shrink-0 space-y-1.5">
         {isDM && (
           <div className="flex gap-1">
             <button onClick={() => rollPublic()}
-              className="flex-1 py-1 border border-[var(--accent)]/25 text-[var(--accent)] text-[8px] font-black uppercase hover:bg-[var(--accent)]/10 flex items-center justify-center gap-1">
+              className="flex-1 py-1 border border-[#B8955A]/25 text-[#B8955A] text-[8px] font-black uppercase hover:bg-[#B8955A]/10 flex items-center justify-center gap-1">
               <Dices size={10} /> D20
             </button>
             <button onClick={async () => {
@@ -912,10 +850,10 @@ function ChatPanel({ authorName, isDM, compact = false }: {
         <div className="flex gap-1.5">
           <input value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && send()}
-            className="flex-1 bg-[var(--bg-input)] border border-white/8 px-2 py-1.5 text-[10px] outline-none focus:border-[var(--accent)]/50 font-serif italic placeholder-white/20"
+            className="flex-1 bg-[#251A0E] border border-white/8 px-2 py-1.5 text-[10px] outline-none focus:border-[#B8955A]/50 font-serif italic placeholder-white/20"
             placeholder={isDM ? 'Narrar...' : 'Hablar...'} />
           <button onClick={send}
-            className="px-2.5 bg-[var(--accent)]/15 border border-[var(--accent)]/25 text-[var(--accent)] hover:bg-[var(--accent)] hover:text-black transition-all">
+            className="px-2.5 bg-[#B8955A]/15 border border-[#B8955A]/25 text-[#B8955A] hover:bg-[#B8955A] hover:text-black transition-all">
             <ChevronUp size={13} />
           </button>
         </div>
@@ -953,12 +891,12 @@ function PlayerSelector({ players, selectedId, onSelect }: {
   );
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-8 p-12">
-      <h2 className="font-title text-3xl font-bold tracking-widest text-[var(--accent)]">¿Quién eres?</h2>
+      <h2 className="font-title text-3xl font-bold tracking-widest text-[#B8955A]">¿Quién eres?</h2>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-5 w-full max-w-2xl">
         {players.map(p => (
           <Link key={p.id} to="/play" onClick={() => onSelect(p.id)}
             className={`flex flex-col items-center gap-3 p-6 border transition-all rounded-sm ${
-              selectedId === p.id ? 'border-[var(--accent)] bg-[var(--accent)]/10' : 'border-white/8 bg-[var(--bg-input)] hover:border-[var(--accent)]/50'
+              selectedId === p.id ? 'border-[#B8955A] bg-[#B8955A]/10' : 'border-white/8 bg-[#251A0E] hover:border-[#B8955A]/50'
             }`}>
             {p.image_url ? (
               <img src={p.image_url} className="w-20 h-20 rounded-full object-cover border-2" style={{ borderColor: p.avatar_color }} alt={p.name} />
@@ -1000,18 +938,18 @@ function SceneView({ sceneData, onHotspotClick }: {
           className="z-30 group cursor-pointer"
           onClick={() => onHotspotClick?.(hs)}>
           <div className={`w-5 h-5 rotate-45 border-2 shadow-lg transition-all animate-pulse hover:scale-125
-            ${hs.type === 'scene' ? 'bg-purple-500/80 border-purple-300' : 'bg-[var(--accent)]/80 border-yellow-300'}`} />
-          <div className="absolute left-6 -top-2 bg-[var(--bg-panel)]/90 border border-[var(--accent)]/50 px-2 py-0.5 text-[8px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap text-white z-50 pointer-events-none">
+            ${hs.type === 'scene' ? 'bg-purple-500/80 border-purple-300' : 'bg-[#B8955A]/80 border-yellow-300'}`} />
+          <div className="absolute left-6 -top-2 bg-[#1A1208]/90 border border-[#B8955A]/50 px-2 py-0.5 text-[8px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap text-white z-50 pointer-events-none">
             {hs.type === 'scene' ? '🎭' : '🗺️'} {hs.label}
-            <span className="text-[var(--accent)] ml-1">← portal</span>
+            <span className="text-[#B8955A] ml-1">← portal</span>
           </div>
         </div>
       ))}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[88%] max-w-2xl p-5 bg-[var(--bg-panel)]/92 backdrop-blur-sm border-t-4 border-[var(--accent)]">
-        <div className="absolute -top-6 left-6 bg-[var(--accent)] text-[var(--bg-panel)] px-5 py-1 text-[10px] font-black uppercase tracking-[0.3em]">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[88%] max-w-2xl p-5 bg-[#1A1208]/92 backdrop-blur-sm border-t-4 border-[#B8955A]">
+        <div className="absolute -top-6 left-6 bg-[#B8955A] text-[#1A1208] px-5 py-1 text-[10px] font-black uppercase tracking-[0.3em]">
           {sceneData.speaker || 'Narrador'}
         </div>
-        <p className="text-[var(--text-main)] font-serif text-lg leading-relaxed">{sceneData.dialogue}</p>
+        <p className="text-[#D4C9B0] font-serif text-lg leading-relaxed">{sceneData.dialogue}</p>
       </div>
     </div>
   );
@@ -1164,7 +1102,7 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
   );
 
   return (
-    <div className="flex h-full w-full relative overflow-hidden" style={{ backgroundColor: 'rgb(var(--bg-base))' }}>
+    <div className="flex h-full w-full relative overflow-hidden" style={{ backgroundColor: '#0E0B07' }}>
 
       {/* ── CENTRO: Visor Principal Expandido ── */}
       <main className="flex-1 relative overflow-hidden">
@@ -1172,36 +1110,30 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
         {/* 🛡️ Botón Flotante del Operativo */}
         <div className="absolute top-4 left-4 z-[200]">
           <button onClick={() => setShowSheet(!showSheet)}
-            className={`p-3 rounded-sm border shadow-2xl transition-all ${showSheet ? 'bg-[var(--accent)] text-black border-[var(--accent)]' : 'bg-[var(--bg-panel)] text-[var(--accent)] border-[var(--accent)]/50 hover:bg-[var(--accent)] hover:text-black'}`}>
+            className={`p-3 rounded-sm border shadow-2xl transition-all ${showSheet ? 'bg-[#B8955A] text-black border-[#B8955A]' : 'bg-[#1A1208] text-[#B8955A] border-[#B8955A]/50 hover:bg-[#B8955A] hover:text-black'}`}>
             <User size={20} />
           </button>
         </div>
 
         {/* 🛡️ Módulo de Estado Oculto */}
         {showSheet && (
-          <div className="absolute top-16 left-4 z-[200] w-[260px] max-h-[85vh] flex flex-col bg-[var(--bg-panel)]/95 backdrop-blur-md border border-[var(--accent)]/30 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            
-            {/* 🛡️ Selector de Atmósfera */}
-            <div className="p-2 border-b border-[var(--accent)]/15 flex justify-center bg-black/40">
-              <ThemeSwitcher />
-            </div>
-
+          <div className="absolute top-16 left-4 z-[200] w-[260px] max-h-[85vh] flex flex-col bg-[#1A1208]/95 backdrop-blur-md border border-[#B8955A]/30 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             {/* Selector de Entidad */}
             {ownedPlayers.length > 1 && (
-              <div className="p-2 bg-black/60 border-b border-[var(--accent)]/20">
+              <div className="p-2 bg-black/60 border-b border-[#B8955A]/20">
                 <select value={playerId} onChange={e => { onSwitchPlayer?.(e.target.value); setShowSheet(false); }}
-                  className="w-full bg-transparent text-[var(--accent)] text-[10px] uppercase font-black outline-none cursor-pointer">
+                  className="w-full bg-transparent text-[#B8955A] text-[10px] uppercase font-black outline-none cursor-pointer">
                   {ownedPlayers.map(p => <option key={p.id} value={p.id} className="bg-black">{p.name}</option>)}
                 </select>
               </div>
             )}
 
             {/* Ficha del Personaje */}
-            <div className="p-4 flex flex-col items-center gap-2 border-b border-[var(--accent)]/15 flex-shrink-0">
+            <div className="p-4 flex flex-col items-center gap-2 border-b border-[#B8955A]/15 flex-shrink-0">
               {player?.image_url ? (
-                <img src={player.image_url} className="w-16 h-16 rounded-full object-cover border-2 border-[var(--accent)]" alt={player.name} />
+                <img src={player.image_url} className="w-16 h-16 rounded-full object-cover border-2 border-[#B8955A]" alt={player.name} />
               ) : (
-                <div className="w-16 h-16 rounded-full border-2 border-[var(--accent)] flex items-center justify-center text-2xl font-bold font-title text-[var(--accent)]">
+                <div className="w-16 h-16 rounded-full border-2 border-[#B8955A] flex items-center justify-center text-2xl font-bold font-title text-[#B8955A]">
                   {player?.name?.charAt(0) ?? '?'}
                 </div>
               )}
@@ -1213,18 +1145,18 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
                   <span className="font-serif text-yellow-400 font-bold text-sm">🪙 {player?.gold ?? 0}</span>
                 </div>
               </div>
-              <button onClick={handleRoll} className="w-full py-2 bg-[rgb(var(--bg-input))] border border-[rgb(var(--accent)/0.30)] hover:border-[rgb(var(--accent))] flex flex-col items-center gap-0.5 transition-all mt-1">
-                <Dices size={16} className="text-[rgb(var(--accent))]" />
-                <span className="text-[8px] font-black uppercase text-[rgb(var(--accent))]">Tirar d20</span>
+              <button onClick={handleRoll} className="w-full py-2 bg-[#251A0E] border border-[rgb(#B8955A/0.30)] hover:border-[#B8955A] flex flex-col items-center gap-0.5 transition-all mt-1">
+                <Dices size={16} className="text-[#B8955A]" />
+                <span className="text-[8px] font-black uppercase text-[#B8955A]">Tirar d20</span>
                 {lastRoll !== null && <span className="text-lg font-title font-bold text-white">{lastRoll}</span>}
               </button>
             </div>
 
             {/* Navegación Bio/Inv */}
-            <div className="flex border-b border-[rgb(var(--accent)/0.10)] flex-shrink-0">
+            <div className="flex border-b border-[rgb(#B8955A/0.10)] flex-shrink-0">
               {([['inv', 'Inv', Package], ['bio', 'Bio', PenLine]] as const).map(([tab, label, Icon]) => (
                 <button key={tab} onClick={() => setActiveTab(tab as any)}
-                  className={`flex-1 py-2 flex flex-col items-center gap-0.5 transition-all ${activeTab === tab ? 'text-[rgb(var(--accent))] bg-[rgb(var(--accent)/0.10)]' : 'text-white/30 hover:text-white/60'}`}>
+                  className={`flex-1 py-2 flex flex-col items-center gap-0.5 transition-all ${activeTab === tab ? 'text-[#B8955A] bg-[rgb(#B8955A/0.10)]' : 'text-white/30 hover:text-white/60'}`}>
                   <Icon size={12} />
                   <span className="text-[7px] font-black uppercase">{label}</span>
                 </button>
@@ -1235,17 +1167,17 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
             <div className="flex-1 overflow-hidden flex flex-col min-h-0">
               {activeTab === 'inv' && (
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1.5">
-                  <p className="text-[8px] font-black uppercase text-[rgb(var(--accent)/0.60)] tracking-widest">Inventario ({inventory.length})</p>
+                  <p className="text-[8px] font-black uppercase text-[rgb(#B8955A/0.60)] tracking-widest">Inventario ({inventory.length})</p>
                   {inventory.length === 0 && <p className="text-center text-[8px] italic opacity-20 py-6 font-serif">Bolsas vacías</p>}
                   {inventory.map(inv => (
-                    <div key={inv.id} className="bg-[rgb(var(--bg-input))] border border-white/5 p-2 group hover:border-[rgb(var(--accent)/0.30)] transition-all">
+                    <div key={inv.id} className="bg-[#251A0E] border border-white/5 p-2 group hover:border-[rgb(#B8955A/0.30)] transition-all">
                       <div className="flex items-center gap-1.5">
                         <span className="text-base leading-none">{inv.shop_items?.icon || '📦'}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[9px] font-bold truncate text-[rgb(var(--text-main))]">{inv.shop_items?.name}</p>
-                          <p className="text-[7px] text-[rgb(var(--accent)/0.50)]">×{inv.quantity} · vender {inv.shop_items?.sell_price ?? '?'}🪙</p>
+                          <p className="text-[9px] font-bold truncate text-[#D4C9B0]">{inv.shop_items?.name}</p>
+                          <p className="text-[7px] text-[rgb(#B8955A/0.50)]">×{inv.quantity} · vender {inv.shop_items?.sell_price ?? '?'}🪙</p>
                         </div>
-                        <button onClick={() => handleSell(inv)} className="opacity-0 group-hover:opacity-100 text-[7px] bg-[rgb(var(--accent)/0.10)] border border-[rgb(var(--accent)/0.30)] px-1.5 py-0.5 text-[rgb(var(--accent))] hover:bg-[rgb(var(--accent))] hover:text-black transition-all flex-shrink-0">
+                        <button onClick={() => handleSell(inv)} className="opacity-0 group-hover:opacity-100 text-[7px] bg-[rgb(#B8955A/0.10)] border border-[rgb(#B8955A/0.30)] px-1.5 py-0.5 text-[#B8955A] hover:bg-[#B8955A] hover:text-black transition-all flex-shrink-0">
                           Vender
                         </button>
                       </div>
@@ -1255,18 +1187,18 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
               )}
               {activeTab === 'bio' && (
                 <div className="flex-1 flex flex-col overflow-hidden p-3 gap-2">
-                  <p className="text-[8px] font-black uppercase text-[rgb(var(--accent)/0.60)] tracking-widest flex-shrink-0">Diario</p>
+                  <p className="text-[8px] font-black uppercase text-[rgb(#B8955A/0.60)] tracking-widest flex-shrink-0">Diario</p>
                   <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 min-h-0">
                     {bio.map(entry => (
-                      <div key={entry.id} className={`p-2 border-l-2 text-[9px] font-serif leading-relaxed ${entry.is_dm ? 'border-[rgb(var(--accent))] text-[rgb(var(--accent)/0.80)] bg-[rgb(var(--accent)/0.05)] italic' : 'border-white/20 text-[rgb(var(--text-main)/0.75)]'}`}>
+                      <div key={entry.id} className={`p-2 border-l-2 text-[9px] font-serif leading-relaxed ${entry.is_dm ? 'border-[#B8955A] text-[rgb(#B8955A/0.80)] bg-[rgb(#B8955A/0.05)] italic' : 'border-white/20 text-[rgb(#D4C9B0/0.75)]'}`}>
                         <span className="text-[6px] font-black uppercase opacity-40 block mb-0.5 not-italic">{entry.author}</span>
                         {entry.content}
                       </div>
                     ))}
                   </div>
                   <div className="flex-shrink-0 border-t border-white/5 pt-2 space-y-1.5">
-                    <textarea value={bioInput} onChange={e => setBioInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) addBioEntry(); }} placeholder="Escribe... (Ctrl+Enter)" rows={2} className="w-full bg-[rgb(var(--bg-input))] border border-white/8 p-2 text-[9px] font-serif italic outline-none resize-none focus:border-[rgb(var(--accent))] text-[rgb(var(--text-main))]" />
-                    <button onClick={addBioEntry} disabled={!bioInput.trim()} className="w-full py-1.5 bg-[rgb(var(--accent)/0.15)] border border-[rgb(var(--accent)/0.30)] text-[rgb(var(--accent))] text-[8px] font-black uppercase hover:bg-[rgb(var(--accent))] hover:text-black transition-all flex items-center justify-center gap-1">
+                    <textarea value={bioInput} onChange={e => setBioInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) addBioEntry(); }} placeholder="Escribe... (Ctrl+Enter)" rows={2} className="w-full bg-[#251A0E] border border-white/8 p-2 text-[9px] font-serif italic outline-none resize-none focus:border-[#B8955A] text-[#D4C9B0]" />
+                    <button onClick={addBioEntry} disabled={!bioInput.trim()} className="w-full py-1.5 bg-[rgb(#B8955A/0.15)] border border-[rgb(#B8955A/0.30)] text-[#B8955A] text-[8px] font-black uppercase hover:bg-[#B8955A] hover:text-black transition-all flex items-center justify-center gap-1">
                       <PenLine size={10} /> Anotar
                     </button>
                   </div>
@@ -1283,15 +1215,15 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
         {/* Tienda */}
         {mode === 'SHOP' && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="w-full max-w-2xl h-[78%] bg-[rgb(var(--bg-panel)/0.97)] border-2 border-[rgb(var(--accent)/0.50)] shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden">
-              <header className="p-4 border-b border-[rgb(var(--accent)/0.20)] flex justify-between items-center bg-[rgb(var(--accent)/0.05)] flex-shrink-0">
+            <div className="w-full max-w-2xl h-[78%] bg-[rgb(#1A1208/0.97)] border-2 border-[rgb(#B8955A/0.50)] shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden">
+              <header className="p-4 border-b border-[rgb(#B8955A/0.20)] flex justify-between items-center bg-[rgb(#B8955A/0.05)] flex-shrink-0">
                 <div>
-                  <h3 className="font-title text-[rgb(var(--accent))] text-sm font-black uppercase italic">Terminal de Suministros</h3>
+                  <h3 className="font-title text-[#B8955A] text-sm font-black uppercase italic">Terminal de Suministros</h3>
                   <p className="text-[8px] text-white/40 uppercase tracking-widest">Catálogo de equipo</p>
                 </div>
                 <div className="text-right">
                   <p className="text-[8px] uppercase opacity-40 font-black">Fondos</p>
-                  <p className="text-[rgb(var(--accent))] font-title font-bold text-xl">🪙 {player?.gold ?? 0}</p>
+                  <p className="text-[#B8955A] font-title font-bold text-xl">🪙 {player?.gold ?? 0}</p>
                 </div>
               </header>
 
@@ -1308,15 +1240,15 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
                   return (
                     <div key={item.id}
                       className={`bg-black/40 border p-4 flex items-center gap-3 transition-all group
-                        ${canAfford ? 'border-white/8 hover:border-[#C5A059]/50' : 'border-white/4 opacity-40'}`}>
+                        ${canAfford ? 'border-white/8 hover:border-[#B8955A]/50' : 'border-white/4 opacity-40'}`}>
                       <span className="text-3xl">{item.icon || '📦'}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-[10px] font-bold text-white uppercase truncate">{item.name}</p>
                         <p className="text-[8px] text-white/40 font-serif italic line-clamp-1 mt-0.5">{item.description}</p>
-                        <p className="text-[#C5A059] font-mono text-xs mt-1">🪙 {item.price}</p>
+                        <p className="text-[#B8955A] font-mono text-xs mt-1">🪙 {item.price}</p>
                       </div>
                       <button onClick={() => handleBuy(item)} disabled={!canAfford}
-                        className="bg-[#C5A059] text-black p-2 hover:bg-white transition-all shadow-lg disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0">
+                        className="bg-[#B8955A] text-black p-2 hover:bg-white transition-all shadow-lg disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0">
                         <ShoppingCart size={14} />
                       </button>
                     </div>
@@ -1327,15 +1259,15 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
               {/* Inventario dentro de tienda */}
               {inventory.length > 0 && (
                 <div className="border-t border-white/5 p-3 bg-black/30 flex-shrink-0">
-                  <p className="text-[7px] font-black uppercase text-[rgb(var(--accent)/0.50)] mb-2">Tu inventario actual</p>
+                  <p className="text-[7px] font-black uppercase text-[rgb(#B8955A/0.50)] mb-2">Tu inventario actual</p>
                   <div className="flex flex-wrap gap-1.5">
                     {inventory.map(inv => (
                       <div key={inv.id}
-                        className="flex items-center gap-1 bg-[rgb(var(--bg-input))] border border-white/8 px-2 py-1 group cursor-default">
+                        className="flex items-center gap-1 bg-[#251A0E] border border-white/8 px-2 py-1 group cursor-default">
                         <span className="text-xs">{inv.shop_items?.icon}</span>
                         <span className="text-[8px] text-white/60">{inv.shop_items?.name} ×{inv.quantity}</span>
                         <button onClick={() => handleSell(inv)}
-                          className="ml-1 opacity-0 group-hover:opacity-100 text-[7px] text-[rgb(var(--accent))] hover:text-white transition-all">
+                          className="ml-1 opacity-0 group-hover:opacity-100 text-[7px] text-[#B8955A] hover:text-white transition-all">
                           vender
                         </button>
                       </div>
@@ -1349,7 +1281,7 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
 
         {/* Feedback toast */}
         {buyFeedback && (
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[200] bg-[rgb(var(--bg-panel)/0.97)] border border-[rgb(var(--accent))] px-8 py-3 text-[10px] font-black text-[rgb(var(--accent))] uppercase tracking-[0.3em] shadow-2xl">
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[200] bg-[rgb(#1A1208/0.97)] border border-[#B8955A] px-8 py-3 text-[10px] font-black text-[#B8955A] uppercase tracking-[0.3em] shadow-2xl">
             {buyFeedback}
           </div>
         )}
@@ -1380,30 +1312,30 @@ function DMInventoryInspector({ playerId, playerName }: { playerId: string; play
   };
 
   return (
-    <div className="bg-[rgb(var(--bg-panel)/0.50)] border border-[rgb(var(--accent)/0.20)] p-4 rounded-sm animate-in">
-      <header className="flex justify-between items-center mb-3 border-b border-[rgb(var(--accent)/0.10)] pb-2">
-        <h4 className="text-[10px] font-black uppercase text-[rgb(var(--accent))] tracking-widest">
+    <div className="bg-[rgb(#1A1208/0.50)] border border-[rgb(#B8955A/0.20)] p-4 rounded-sm animate-in">
+      <header className="flex justify-between items-center mb-3 border-b border-[rgb(#B8955A/0.10)] pb-2">
+        <h4 className="text-[10px] font-black uppercase text-[#B8955A] tracking-widest">
           Inventario: {playerName}
         </h4>
         <span className="text-[8px] opacity-40 font-mono">{playerId.slice(0, 6)}</span>
       </header>
       <div className="space-y-1.5 max-h-64 overflow-y-auto custom-scrollbar">
         {inventory.length > 0 ? inventory.map(item => (
-          <div key={item.id} className="flex items-center justify-between bg-black/40 p-2 border border-white/5 group hover:border-[#C5A059]/30 transition-all">
+          <div key={item.id} className="flex items-center justify-between bg-black/40 p-2 border border-white/5 group hover:border-[#B8955A]/30 transition-all">
             <div className="flex items-center gap-3">
               <span className="text-lg">{item.shop_items?.icon || '📦'}</span>
               <div>
                 <span className="text-[9px] font-bold text-white uppercase">{item.shop_items?.name}</span>
-                <span className="text-[7px] text-[#C5A059]/50 ml-2 font-mono">×{item.quantity}</span>
+                <span className="text-[7px] text-[#B8955A]/50 ml-2 font-mono">×{item.quantity}</span>
               </div>
             </div>
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <button onClick={() => updateQty(item.id, item.quantity - 1)}
-                className="w-5 h-5 flex items-center justify-center bg-[#2D1B14] border border-[#C5A059]/30 text-[#C5A059] hover:bg-[#C5A059] hover:text-black transition-all">
+                className="w-5 h-5 flex items-center justify-center bg-[#251A0E] border border-[#B8955A]/30 text-[#B8955A] hover:bg-[#B8955A] hover:text-black transition-all">
                 <Minus size={10} />
               </button>
               <button onClick={() => updateQty(item.id, item.quantity + 1)}
-                className="w-5 h-5 flex items-center justify-center bg-[#2D1B14] border border-[#C5A059]/30 text-[#C5A059] hover:bg-[#C5A059] hover:text-black transition-all">
+                className="w-5 h-5 flex items-center justify-center bg-[#251A0E] border border-[#B8955A]/30 text-[#B8955A] hover:bg-[#B8955A] hover:text-black transition-all">
                 <Plus size={10} />
               </button>
               <button onClick={() => deleteItem(item.id)} className="ml-1 text-red-500/50 hover:text-red-500 p-1">
@@ -1449,15 +1381,15 @@ function GiveItemSection({ playerId, playerName }: { playerId: string; playerNam
 
   return (
     <div className="mt-4 pt-4 border-t border-white/8">
-      <p className="text-[9px] font-black uppercase text-[#C5A059]/60 mb-2">Dar objeto</p>
+      <p className="text-[9px] font-black uppercase text-[#B8955A]/60 mb-2">Dar objeto</p>
       <div className="flex gap-2">
         <select value={selectedItem} onChange={e => setSelectedItem(e.target.value)}
-          className="flex-1 bg-[#1C1008] border border-white/10 p-1.5 text-[10px] text-[#D7CCC8] outline-none">
+          className="flex-1 bg-[#1A1208] border border-white/10 p-1.5 text-[10px] text-[#D4C9B0] outline-none">
           <option value="">— Seleccionar —</option>
           {items.map(i => <option key={i.id} value={i.id}>{i.icon} {i.name}</option>)}
         </select>
         <button onClick={give} disabled={!selectedItem}
-          className="px-3 bg-[#C5A059]/20 border border-[#C5A059]/30 text-[#C5A059] text-[9px] font-black hover:bg-[#C5A059] hover:text-black transition-all disabled:opacity-30">
+          className="px-3 bg-[#B8955A]/20 border border-[#B8955A]/30 text-[#B8955A] text-[9px] font-black hover:bg-[#B8955A] hover:text-black transition-all disabled:opacity-30">
           <Gift size={13} />
         </button>
       </div>
@@ -1496,8 +1428,8 @@ function OwnerAssignField({ currentOwnerId, onAssign }: {
   return (
     <div className="space-y-1">
       {currentOwnerId && (
-        <p className="text-[8px] text-[#C5A059]/60">
-          Asignado a: <span className="text-[#C5A059]">{currentName || currentOwnerId.slice(0, 8)}</span>
+        <p className="text-[8px] text-[#B8955A]/60">
+          Asignado a: <span className="text-[#B8955A]">{currentName || currentOwnerId.slice(0, 8)}</span>
         </p>
       )}
       <div className="flex gap-2">
@@ -1505,10 +1437,10 @@ function OwnerAssignField({ currentOwnerId, onAssign }: {
           value={search} onChange={e => setSearch(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && lookup()}
           placeholder="Nombre de usuario..."
-          className="flex-1 bg-[#1C1008] border border-white/10 p-2 text-sm outline-none focus:border-[#C5A059] text-[#D7CCC8] placeholder-white/20"
+          className="flex-1 bg-[#1A1208] border border-white/10 p-2 text-sm outline-none focus:border-[#B8955A] text-[#D4C9B0] placeholder-white/20"
         />
         <button onClick={lookup}
-          className="px-3 bg-[#C5A059]/20 border border-[#C5A059]/30 text-[#C5A059] text-[9px] font-black hover:bg-[#C5A059] hover:text-black transition-all">
+          className="px-3 bg-[#B8955A]/20 border border-[#B8955A]/30 text-[#B8955A] text-[9px] font-black hover:bg-[#B8955A] hover:text-black transition-all">
           Buscar
         </button>
       </div>
@@ -1531,7 +1463,7 @@ function MasterDashboard({ players, setPlayers }: {
 }) {
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newColor, setNewColor] = useState('#C5A059');
+  const [newColor, setNewColor] = useState('#B8955A');
   const [inspectingId, setInspectingId] = useState<string | null>(null);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
 
@@ -1582,9 +1514,9 @@ function MasterDashboard({ players, setPlayers }: {
   };
 
   return (
-    <div className="h-full w-full flex bg-[#1C1008]">
+    <div className="h-full w-full flex bg-[#1A1208]">
       <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-y-auto custom-scrollbar">
-        <h1 className="font-display text-4xl font-black text-[#C5A059] tracking-tight italic mb-2">VELLUM</h1>
+        <h1 className="font-display text-4xl font-black text-[#B8955A] tracking-tight italic mb-2">VELLUM</h1>
         <p className="text-[10px] font-title uppercase tracking-[0.5em] opacity-40 mb-10">Master Console</p>
 
         <div className="grid grid-cols-5 gap-3 w-full max-w-3xl mb-8">
@@ -1596,31 +1528,31 @@ function MasterDashboard({ players, setPlayers }: {
             { to: '/manuals', icon: <BookOpen size={24} />, label: 'Manuales' },
           ].map(({ to, icon, label }) => (
             <Link key={to} to={to}
-              className="flex flex-col items-center gap-2.5 bg-[#C5A059]/8 border border-[#C5A059]/25 p-5 hover:bg-[#C5A059] hover:text-[#1C1008] hover:border-[#C5A059] transition-all group">
-              <div className="group-hover:scale-110 transition-transform text-[#C5A059] group-hover:text-[#1C1008]">{icon}</div>
+              className="flex flex-col items-center gap-2.5 bg-[#B8955A]/8 border border-[#B8955A]/25 p-5 hover:bg-[#B8955A] hover:text-[#1A1208] hover:border-[#B8955A] transition-all group">
+              <div className="group-hover:scale-110 transition-transform text-[#B8955A] group-hover:text-[#1A1208]">{icon}</div>
               <span className="font-title uppercase text-[9px] tracking-widest text-center">{label}</span>
             </Link>
           ))}
         </div>
 
-        <div className="w-full max-w-3xl bg-[#2D1B14] border border-[#C5A059]/15 p-5">
+        <div className="w-full max-w-3xl bg-[#251A0E] border border-[#B8955A]/15 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-title text-lg font-bold">Personajes ({players.length})</h3>
             <button onClick={() => setShowNew(!showNew)}
-              className="flex items-center gap-1.5 bg-[#C5A059] text-[#1C1008] px-3 py-1.5 text-[9px] font-black uppercase hover:bg-white transition-all">
+              className="flex items-center gap-1.5 bg-[#B8955A] text-[#1A1208] px-3 py-1.5 text-[9px] font-black uppercase hover:bg-white transition-all">
               <Plus size={13} /> Nuevo
             </button>
           </div>
 
           {showNew && (
-            <div className="flex gap-2 mb-4 p-3 bg-[#1C1008] border border-[#C5A059]/25 animate-in">
+            <div className="flex gap-2 mb-4 p-3 bg-[#1A1208] border border-[#B8955A]/25 animate-in">
               <input value={newName} onChange={e => setNewName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && createPlayer()} autoFocus
                 placeholder="Nombre del personaje..."
-                className="flex-1 bg-transparent border-b border-[#C5A059]/40 p-2 text-sm outline-none focus:border-[#C5A059] font-serif italic" />
+                className="flex-1 bg-transparent border-b border-[#B8955A]/40 p-2 text-sm outline-none focus:border-[#B8955A] font-serif italic" />
               <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)}
                 className="w-10 h-10 cursor-pointer bg-transparent border-none rounded" />
-              <button onClick={createPlayer} className="px-3 bg-[#C5A059] text-[#1C1008] font-black hover:bg-white">
+              <button onClick={createPlayer} className="px-3 bg-[#B8955A] text-[#1A1208] font-black hover:bg-white">
                 <Check size={16} />
               </button>
             </div>
@@ -1629,7 +1561,7 @@ function MasterDashboard({ players, setPlayers }: {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {players.map(p => (
               <div key={p.id} className="space-y-2">
-                <div className="flex items-center gap-3 bg-[#1C1008] border border-white/5 p-3 hover:border-[#C5A059]/25 transition-all group">
+                <div className="flex items-center gap-3 bg-[#1A1208] border border-white/5 p-3 hover:border-[#B8955A]/25 transition-all group">
                   {p.image_url ? (
                     <img src={p.image_url} className="w-10 h-10 rounded-full object-cover border-2 flex-shrink-0" style={{ borderColor: p.avatar_color }} alt={p.name} />
                   ) : (
@@ -1644,10 +1576,10 @@ function MasterDashboard({ players, setPlayers }: {
                   </div>
                   <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all">
                     <button onClick={() => setInspectingId(p.id === inspectingId ? null : p.id)}
-                      className="text-[#C5A059]/60 hover:text-[#C5A059] p-0.5" title="Ver Inventario">
+                      className="text-[#B8955A]/60 hover:text-[#B8955A] p-0.5" title="Ver Inventario">
                       <Package size={12} />
                     </button>
-                    <button onClick={() => setEditingPlayer({ ...p })} className="text-[#C5A059]/60 hover:text-[#C5A059] p-0.5">
+                    <button onClick={() => setEditingPlayer({ ...p })} className="text-[#B8955A]/60 hover:text-[#B8955A] p-0.5">
                       <Edit2 size={12} />
                     </button>
                     <button onClick={() => deletePlayer(p.id)} className="text-red-500/50 hover:text-red-500 p-0.5">
@@ -1665,13 +1597,13 @@ function MasterDashboard({ players, setPlayers }: {
         </div>
       </div>
 
-      <aside style={{ width: '260px' }} className="bg-[#150D08] border-l border-white/5 flex flex-col">
+      <aside style={{ width: '260px' }} className="bg-[#0E0B07] border-l border-white/5 flex flex-col">
         <ChatPanel authorName="DM" isDM compact />
       </aside>
 
       {editingPlayer && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center" onClick={() => setEditingPlayer(null)}>
-          <div className="bg-[#2D1B14] border border-[#C5A059]/50 p-6 w-96 shadow-2xl overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#251A0E] border border-[#B8955A]/50 p-6 w-96 shadow-2xl overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-5">
               <h4 className="font-title font-bold text-lg">Editar Personaje</h4>
               <button onClick={() => setEditingPlayer(null)} className="text-white/30 hover:text-white"><X size={16} /></button>
@@ -1679,14 +1611,14 @@ function MasterDashboard({ players, setPlayers }: {
             <div className="space-y-3">
               {[{ label: 'Nombre', key: 'name', type: 'text' }, { label: 'URL Imagen', key: 'image_url', type: 'text' }].map(({ label, key, type }) => (
                 <div key={key}>
-                  <label className="text-[9px] uppercase font-black text-[#C5A059] mb-1 block">{label}</label>
+                  <label className="text-[9px] uppercase font-black text-[#B8955A] mb-1 block">{label}</label>
                   <input type={type} value={(editingPlayer as any)[key] ?? ''}
                     onChange={e => setEditingPlayer({ ...editingPlayer, [key]: e.target.value })}
-                    className="w-full bg-[#1C1008] border border-white/10 p-2 text-sm outline-none focus:border-[#C5A059]" />
+                    className="w-full bg-[#1A1208] border border-white/10 p-2 text-sm outline-none focus:border-[#B8955A]" />
                 </div>
               ))}
               <div>
-                <label className="text-[9px] uppercase font-black text-[#C5A059] mb-1 block">
+                <label className="text-[9px] uppercase font-black text-[#B8955A] mb-1 block">
                   Asignar a usuario (nombre de cuenta)
                 </label>
                 <OwnerAssignField
@@ -1699,15 +1631,15 @@ function MasterDashboard({ players, setPlayers }: {
               <div className="flex gap-2">
                 {[{ label: 'HP Actual', key: 'hp' }, { label: 'HP Máx', key: 'max_hp' }, { label: 'Oro', key: 'gold' }].map(({ label, key }) => (
                   <div key={key} className="flex-1">
-                    <label className="text-[9px] uppercase font-black text-[#C5A059] mb-1 block">{label}</label>
+                    <label className="text-[9px] uppercase font-black text-[#B8955A] mb-1 block">{label}</label>
                     <input type="number" value={(editingPlayer as any)[key]}
                       onChange={e => setEditingPlayer({ ...editingPlayer!, [key]: +e.target.value })}
-                      className="w-full bg-[#1C1008] border border-white/10 p-2 text-xs outline-none focus:border-[#C5A059]" />
+                      className="w-full bg-[#1A1208] border border-white/10 p-2 text-xs outline-none focus:border-[#B8955A]" />
                   </div>
                 ))}
               </div>
               <div>
-                <label className="text-[9px] uppercase font-black text-[#C5A059] mb-1 block">Color Avatar</label>
+                <label className="text-[9px] uppercase font-black text-[#B8955A] mb-1 block">Color Avatar</label>
                 <input type="color" value={editingPlayer.avatar_color}
                   onChange={e => setEditingPlayer({ ...editingPlayer, avatar_color: e.target.value })}
                   className="w-full h-10 cursor-pointer bg-transparent border border-white/10" />
@@ -1716,9 +1648,9 @@ function MasterDashboard({ players, setPlayers }: {
             <GiveItemSection playerId={editingPlayer.id} playerName={editingPlayer.name} />
             <div className="flex gap-2 mt-5">
               <button onClick={() => setEditingPlayer(null)}
-                className="flex-1 py-2 border border-white/10 text-[10px] uppercase hover:border-[#C5A059]">Cancelar</button>
+                className="flex-1 py-2 border border-white/10 text-[10px] uppercase hover:border-[#B8955A]">Cancelar</button>
               <button onClick={saveEdit}
-                className="flex-1 py-2 bg-[#C5A059] text-[#1C1008] text-[10px] font-black uppercase hover:bg-white">Guardar</button>
+                className="flex-1 py-2 bg-[#B8955A] text-[#1A1208] text-[10px] font-black uppercase hover:bg-white">Guardar</button>
             </div>
           </div>
         </div>
@@ -1857,29 +1789,29 @@ function TacticalMapModule({ players, entities, broadcastToPlayer, broadcastToAl
 
   return (
     <div className="h-full w-full select-none overflow-hidden"
-      style={{ display: 'grid', gridTemplateColumns: `${leftWidth}% 4px 1fr 4px ${rightWidth}%`, background: '#0D0704' }}>
+      style={{ display: 'grid', gridTemplateColumns: `${leftWidth}% 4px 1fr 4px ${rightWidth}%`, background: '#0E0B07' }}>
 
-      <aside className="bg-[#1C1008] flex flex-col gap-3 overflow-y-auto border-r border-[#C5A059]/10 p-4 shadow-2xl z-20 custom-scrollbar">
-        <h2 className="text-base font-title text-[#C5A059] border-b border-[#C5A059]/20 pb-2 mb-3 uppercase italic font-black">Control Maestro</h2>
+      <aside className="bg-[#1A1208] flex flex-col gap-3 overflow-y-auto border-r border-[#B8955A]/10 p-4 shadow-2xl z-20 custom-scrollbar">
+        <h2 className="text-base font-title text-[#B8955A] border-b border-[#B8955A]/20 pb-2 mb-3 uppercase italic font-black">Control Maestro</h2>
 
         <div className="mb-4">
           <div className="flex justify-between items-center mb-2">
-            <p className="text-[8px] font-black uppercase text-[#C5A059]/50 tracking-widest">Mapas</p>
-            <button onClick={() => setShowNewMap(!showNewMap)} className="text-[#C5A059]/50 hover:text-[#C5A059]"><Plus size={16} /></button>
+            <p className="text-[8px] font-black uppercase text-[#B8955A]/50 tracking-widest">Mapas</p>
+            <button onClick={() => setShowNewMap(!showNewMap)} className="text-[#B8955A]/50 hover:text-[#B8955A]"><Plus size={16} /></button>
           </div>
           {showNewMap && (
-            <div className="space-y-2 mb-3 p-3 bg-black/40 border border-[#C5A059]/20 animate-in">
+            <div className="space-y-2 mb-3 p-3 bg-black/40 border border-[#B8955A]/20 animate-in">
               <input value={newMapName} onChange={e => setNewMapName(e.target.value)} placeholder="Nombre..."
-                className="w-full bg-transparent border-b border-[#C5A059]/30 p-1 text-[9px] outline-none text-white" />
+                className="w-full bg-transparent border-b border-[#B8955A]/30 p-1 text-[9px] outline-none text-white" />
               <input value={newMapUrl} onChange={e => setNewMapUrl(e.target.value)} placeholder="URL imagen..."
                 className="w-full bg-transparent border-b border-white/10 p-1 text-[9px] outline-none text-white/60" />
-              <button onClick={createMap} className="w-full py-2 bg-[#C5A059] text-black text-[8px] font-black uppercase hover:bg-white transition-all">Registrar</button>
+              <button onClick={createMap} className="w-full py-2 bg-[#B8955A] text-black text-[8px] font-black uppercase hover:bg-white transition-all">Registrar</button>
             </div>
           )}
           <div className="space-y-0.5 max-h-32 overflow-y-auto custom-scrollbar">
             {maps.map(m => (
               <button key={m.id} onClick={() => setCurrentMap(m)}
-                className={`block w-full text-left p-2 text-[9px] transition-all ${currentMap?.id === m.id ? 'text-[#C5A059] bg-[#C5A059]/10 border-l-2 border-[#C5A059]' : 'opacity-40 hover:opacity-100 hover:bg-white/5'}`}>
+                className={`block w-full text-left p-2 text-[9px] transition-all ${currentMap?.id === m.id ? 'text-[#B8955A] bg-[#B8955A]/10 border-l-2 border-[#B8955A]' : 'opacity-40 hover:opacity-100 hover:bg-white/5'}`}>
                 ▸ {m.name}
               </button>
             ))}
@@ -1889,16 +1821,16 @@ function TacticalMapModule({ players, entities, broadcastToPlayer, broadcastToAl
         <div className="flex gap-1 mb-4">
           {(['MOVE', 'HOTSPOT'] as const).map(t => (
             <button key={t} onClick={() => setActiveTool(t)}
-              className={`flex-1 py-2 text-[8px] font-black uppercase transition-all ${activeTool === t ? 'bg-[#C5A059] text-black' : 'border border-[#C5A059]/25 text-[#C5A059]/60'}`}>
+              className={`flex-1 py-2 text-[8px] font-black uppercase transition-all ${activeTool === t ? 'bg-[#B8955A] text-black' : 'border border-[#B8955A]/25 text-[#B8955A]/60'}`}>
               {t === 'MOVE' ? '✥ Mover' : '◆ Portal'}
             </button>
           ))}
         </div>
 
         <div className="p-3 bg-black/20 border border-white/5 rounded-lg">
-          <p className="text-[8px] font-black uppercase text-[#C5A059]/50 mb-2">Despliegue</p>
+          <p className="text-[8px] font-black uppercase text-[#B8955A]/50 mb-2">Despliegue</p>
           <select value={spawnFilter} onChange={(e: any) => setSpawnFilter(e.target.value)}
-            className="w-full bg-[#2D1B14] p-2 text-[10px] text-[#C5A059] border border-[#C5A059]/20 mb-3 outline-none">
+            className="w-full bg-[#251A0E] p-2 text-[10px] text-[#B8955A] border border-[#B8955A]/20 mb-3 outline-none">
             <option value="JUGADOR">Operativos</option>
             <option value="NPC">Aliados</option>
             <option value="Enemigo">Amenazas</option>
@@ -1906,8 +1838,8 @@ function TacticalMapModule({ players, entities, broadcastToPlayer, broadcastToAl
           <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar">
             {spawnFilter === 'JUGADOR' ? players.map(p => (
               <button key={p.id} onClick={() => spawnToken(p, true)}
-                className="w-full text-left p-2 bg-[#2D1B14]/40 text-[9px] hover:bg-[#C5A059]/20 border border-transparent flex items-center gap-3 transition-all group">
-                <div className="w-6 h-6 rounded-full border border-[#C5A059]/30 overflow-hidden bg-black">
+                className="w-full text-left p-2 bg-[#251A0E]/40 text-[9px] hover:bg-[#B8955A]/20 border border-transparent flex items-center gap-3 transition-all group">
+                <div className="w-6 h-6 rounded-full border border-[#B8955A]/30 overflow-hidden bg-black">
                   {p.image_url ? <img src={p.image_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[8px] font-black text-white">{p.name[0]}</div>}
                 </div>
                 <span className="truncate flex-1 font-bold text-white/80">{p.name}</span>
@@ -1920,7 +1852,7 @@ function TacticalMapModule({ players, entities, broadcastToPlayer, broadcastToAl
               return false;
             }).map(e => (
               <button key={e.id} onClick={() => spawnToken(e, false)}
-                className="w-full text-left p-2 bg-[#2D1B14]/40 text-[9px] hover:bg-[#C5A059]/20 border border-transparent flex items-center gap-3 transition-all group">
+                className="w-full text-left p-2 bg-[#251A0E]/40 text-[9px] hover:bg-[#B8955A]/20 border border-transparent flex items-center gap-3 transition-all group">
                 <span className="flex-1 truncate font-bold text-white/80">{e.name}</span>
                 <span className="text-[7px] opacity-40 uppercase">{e.type}</span>
                 <Plus size={12} className="opacity-0 group-hover:opacity-100" />
@@ -1929,14 +1861,14 @@ function TacticalMapModule({ players, entities, broadcastToPlayer, broadcastToAl
           </div>
         </div>
 
-        <button onClick={sendMap} className="mt-auto w-full bg-[#C5A059] text-black py-3 font-black text-[10px] uppercase hover:bg-white transition-all tracking-[0.2em] shadow-lg">
+        <button onClick={sendMap} className="mt-auto w-full bg-[#B8955A] text-black py-3 font-black text-[10px] uppercase hover:bg-white transition-all tracking-[0.2em] shadow-lg">
           ⬡ Sincronizar Radar
         </button>
       </aside>
 
-      <div onMouseDown={() => { resizing.current = 'left'; }} className="w-1 cursor-col-resize bg-[#C5A059]/10" />
+      <div onMouseDown={() => { resizing.current = 'left'; }} className="w-1 cursor-col-resize bg-[#B8955A]/10" />
 
-      <main className="relative bg-[#0D0704] overflow-hidden shadow-inner" ref={mapRef}>
+      <main className="relative bg-[#0E0B07] overflow-hidden shadow-inner" ref={mapRef}>
         <MapWithTokens
           map={currentMap} tokens={tokens} isDM={true}
           onTokenMouseDown={(e, id) => { e.preventDefault(); setDragToken(id); setIsDragging(false); }}
@@ -1950,10 +1882,10 @@ function TacticalMapModule({ players, entities, broadcastToPlayer, broadcastToAl
         />
 
         {infoModal && (
-          <div className="absolute top-4 left-4 z-[100] bg-[#1C1008]/95 border border-[#C5A059]/50 p-5 shadow-2xl">
+          <div className="absolute top-4 left-4 z-[100] bg-[#1A1208]/95 border border-[#B8955A]/50 p-5 shadow-2xl">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-14 h-14 rounded-full border-2 border-[#C5A059]/50 overflow-hidden bg-black">
-                {infoModal.image_url ? <img src={infoModal.image_url} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center font-bold text-[#C5A059] text-xl">{infoModal.name.charAt(0)}</div>}
+              <div className="w-14 h-14 rounded-full border-2 border-[#B8955A]/50 overflow-hidden bg-black">
+                {infoModal.image_url ? <img src={infoModal.image_url} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center font-bold text-[#B8955A] text-xl">{infoModal.name.charAt(0)}</div>}
               </div>
               <div>
                 <h4 className="text-white font-bold font-title text-base">{infoModal.name}</h4>
@@ -1968,25 +1900,25 @@ function TacticalMapModule({ players, entities, broadcastToPlayer, broadcastToAl
         )}
 
         {pendingHotspot && (
-          <div className="absolute top-4 right-4 z-[100] bg-[#1C1008]/95 border border-[#C5A059]/50 p-5 shadow-2xl w-64">
-            <h4 className="font-title text-sm mb-4 text-[#C5A059] uppercase italic tracking-[0.2em] font-black">Nuevo Portal</h4>
+          <div className="absolute top-4 right-4 z-[100] bg-[#1A1208]/95 border border-[#B8955A]/50 p-5 shadow-2xl w-64">
+            <h4 className="font-title text-sm mb-4 text-[#B8955A] uppercase italic tracking-[0.2em] font-black">Nuevo Portal</h4>
             <div className="space-y-3">
               <input value={hotspotForm.label} onChange={e => setHotspotForm({ ...hotspotForm, label: e.target.value })}
-                placeholder="Etiqueta..." className="w-full bg-[#2D1B14] border border-white/10 p-2 text-[10px] outline-none text-white focus:border-[#C5A059]" />
+                placeholder="Etiqueta..." className="w-full bg-[#251A0E] border border-white/10 p-2 text-[10px] outline-none text-white focus:border-[#B8955A]" />
               <select value={hotspotForm.type} onChange={e => setHotspotForm({ ...hotspotForm, type: e.target.value as any })}
-                className="w-full bg-[#2D1B14] border border-white/10 p-2 text-[10px] outline-none text-[#D7CCC8]">
+                className="w-full bg-[#251A0E] border border-white/10 p-2 text-[10px] outline-none text-[#D4C9B0]">
                 <option value="map">Destino: Mapa</option>
                 <option value="scene">Destino: Escena</option>
               </select>
               {hotspotForm.type === 'map' ? (
                 <select value={hotspotForm.targetMapId} onChange={e => setHotspotForm({ ...hotspotForm, targetMapId: e.target.value })}
-                  className="w-full bg-[#2D1B14] border border-white/10 p-2 text-[10px] outline-none text-[#D7CCC8]">
+                  className="w-full bg-[#251A0E] border border-white/10 p-2 text-[10px] outline-none text-[#D4C9B0]">
                   <option value="">— Seleccionar Mapa —</option>
                   {maps.filter(m => m.id !== currentMap?.id).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
               ) : (
                 <select value={hotspotForm.targetSceneId} onChange={e => setHotspotForm({ ...hotspotForm, targetSceneId: e.target.value })}
-                  className="w-full bg-[#2D1B14] border border-white/10 p-2 text-[10px] outline-none text-[#D7CCC8]">
+                  className="w-full bg-[#251A0E] border border-white/10 p-2 text-[10px] outline-none text-[#D4C9B0]">
                   <option value="">— Seleccionar Escena —</option>
                   {scenes.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
                 </select>
@@ -1994,15 +1926,15 @@ function TacticalMapModule({ players, entities, broadcastToPlayer, broadcastToAl
             </div>
             <div className="flex gap-2 mt-5">
               <button onClick={() => setPendingHotspot(null)} className="flex-1 py-2 border border-white/10 text-[9px] uppercase font-black text-white/40">Cancelar</button>
-              <button onClick={saveHotspot} className="flex-1 py-2 bg-[#C5A059] text-black text-[9px] font-black uppercase">Fijar Portal</button>
+              <button onClick={saveHotspot} className="flex-1 py-2 bg-[#B8955A] text-black text-[9px] font-black uppercase">Fijar Portal</button>
             </div>
           </div>
         )}
       </main>
 
-      <div onMouseDown={() => { resizing.current = 'right'; }} className="w-1 cursor-col-resize bg-[#C5A059]/10" />
+      <div onMouseDown={() => { resizing.current = 'right'; }} className="w-1 cursor-col-resize bg-[#B8955A]/10" />
 
-      <aside className="bg-[#150D08] flex flex-col min-h-0 overflow-hidden shadow-2xl z-20">
+      <aside className="bg-[#0E0B07] flex flex-col min-h-0 overflow-hidden shadow-2xl z-20">
         <ChatPanel authorName="DM" isDM compact />
       </aside>
     </div>
@@ -2099,17 +2031,17 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
   };
 
   return (
-    <div className="h-full w-full flex bg-[#1C1008] animate-in">
-      <aside style={{ width: '280px' }} className="bg-[#2D1B14] border-r border-[#C5A059]/15 flex flex-col overflow-y-auto custom-scrollbar">
-        <div className="p-4 border-b border-[#C5A059]/20 flex items-center justify-between flex-shrink-0">
+    <div className="h-full w-full flex bg-[#1A1208] animate-in">
+      <aside style={{ width: '280px' }} className="bg-[#251A0E] border-r border-[#B8955A]/15 flex flex-col overflow-y-auto custom-scrollbar">
+        <div className="p-4 border-b border-[#B8955A]/20 flex items-center justify-between flex-shrink-0">
           <h3 className="font-title text-base font-bold">Motor VN</h3>
-          <button onClick={handleSave} className="bg-[#C5A059] text-black p-1.5 hover:bg-white transition-all"><Save size={13} /></button>
+          <button onClick={handleSave} className="bg-[#B8955A] text-black p-1.5 hover:bg-white transition-all"><Save size={13} /></button>
         </div>
 
         <div className="flex border-b border-white/5 flex-shrink-0">
           {(['scene', 'shop', 'portals'] as const).map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2 text-[8px] font-black uppercase flex items-center justify-center gap-1 transition-all ${activeTab === tab ? 'bg-[#C5A059]/15 text-[#C5A059] border-b border-[#C5A059]' : 'text-white/30 hover:text-white/60'}`}>
+              className={`flex-1 py-2 text-[8px] font-black uppercase flex items-center justify-center gap-1 transition-all ${activeTab === tab ? 'bg-[#B8955A]/15 text-[#B8955A] border-b border-[#B8955A]' : 'text-white/30 hover:text-white/60'}`}>
               {tab === 'scene' ? <ScrollText size={10} /> : tab === 'shop' ? <ShoppingBag size={10} /> : <MapIcon size={10} />}
               {tab === 'scene' ? 'Escena' : tab === 'shop' ? 'Tienda' : 'Portales'}
             </button>
@@ -2119,22 +2051,22 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
         <div className="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-3">
           {activeTab === 'scene' && (
             <>
-              <label className="text-[9px] uppercase font-black text-[#C5A059] block">
+              <label className="text-[9px] uppercase font-black text-[#B8955A] block">
                 Fondo
                 <input type="file" onChange={e => handleUpload(e, 'bg_image')} accept="image/*" className="w-full mt-1 text-white/30 text-[9px]" />
               </label>
-              <label className="text-[9px] uppercase font-black text-[#C5A059] block">
+              <label className="text-[9px] uppercase font-black text-[#B8955A] block">
                 Sprite PJ
                 <input type="file" onChange={e => handleUpload(e, 'char_image')} accept="image/*" className="w-full mt-1 text-white/30 text-[9px]" />
               </label>
               <input value={form.bg_image} onChange={e => setForm({ ...form, bg_image: e.target.value })}
-                className="w-full bg-[#1C1008] border border-white/8 p-1.5 text-[9px] outline-none focus:border-[#C5A059]" placeholder="URL fondo" />
+                className="w-full bg-[#1A1208] border border-white/8 p-1.5 text-[9px] outline-none focus:border-[#B8955A]" placeholder="URL fondo" />
               <input value={form.char_image} onChange={e => setForm({ ...form, char_image: e.target.value })}
-                className="w-full bg-[#1C1008] border border-white/8 p-1.5 text-[9px] outline-none focus:border-[#C5A059]" placeholder="URL sprite" />
+                className="w-full bg-[#1A1208] border border-white/8 p-1.5 text-[9px] outline-none focus:border-[#B8955A]" placeholder="URL sprite" />
               <input value={form.speaker} onChange={e => setForm({ ...form, speaker: e.target.value })}
-                className="w-full bg-[#1C1008] border border-white/8 p-2 text-xs outline-none focus:border-[#C5A059]" placeholder="Hablante" />
+                className="w-full bg-[#1A1208] border border-white/8 p-2 text-xs outline-none focus:border-[#B8955A]" placeholder="Hablante" />
               <textarea value={form.dialogue} onChange={e => setForm({ ...form, dialogue: e.target.value })}
-                className="h-24 w-full bg-[#1C1008] border border-white/8 p-2 text-xs outline-none resize-none font-serif focus:border-[#C5A059]" placeholder="Guion..." />
+                className="h-24 w-full bg-[#1A1208] border border-white/8 p-2 text-xs outline-none resize-none font-serif focus:border-[#B8955A]" placeholder="Guion..." />
             </>
           )}
 
@@ -2142,11 +2074,11 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
             <div className="space-y-1">
               {shopItems.map(item => (
                 <button key={item.id} onClick={() => toggleItem(item.id)}
-                  className={`w-full text-left text-[9px] p-2 border flex items-center gap-2 transition-all ${form.shop_items.includes(item.id) ? 'border-[#C5A059] bg-[#C5A059]/10' : 'border-white/5 hover:border-white/15'}`}>
+                  className={`w-full text-left text-[9px] p-2 border flex items-center gap-2 transition-all ${form.shop_items.includes(item.id) ? 'border-[#B8955A] bg-[#B8955A]/10' : 'border-white/5 hover:border-white/15'}`}>
                   <span>{item.icon || CATEGORY_ICONS[item.category]}</span>
                   <span className="flex-1 truncate">{item.name}</span>
                   <span className="text-yellow-500 text-[8px]">🪙{item.price}</span>
-                  {form.shop_items.includes(item.id) && <Check size={10} className="text-[#C5A059]" />}
+                  {form.shop_items.includes(item.id) && <Check size={10} className="text-[#B8955A]" />}
                 </button>
               ))}
             </div>
@@ -2156,37 +2088,37 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
             <div className="space-y-3">
               <p className="text-[8px] text-white/30 italic">Clic en la vista previa para colocar portales. Los jugadores los verán y podrán cruzarlos de forma autónoma.</p>
               {form.hotspots.map(hs => (
-                <div key={hs.id} className="flex items-center gap-2 bg-[#1C1008] border border-white/5 p-2">
+                <div key={hs.id} className="flex items-center gap-2 bg-[#1A1208] border border-white/5 p-2">
                   <span className="text-[9px] flex-1">{hs.type === 'scene' ? '🎭' : '🗺️'} {hs.label}</span>
                   <button onClick={() => setForm({ ...form, hotspots: form.hotspots.filter(h => h.id !== hs.id) })} className="text-red-500/50 hover:text-red-500"><X size={11} /></button>
                 </div>
               ))}
               {pendingSceneHotspot && (
-                <div className="bg-[#1C1008] border border-[#C5A059]/30 p-3 space-y-2 animate-in">
-                  <p className="text-[8px] font-black uppercase text-[#C5A059]">Portal ({pendingSceneHotspot.x.toFixed(0)}%, {pendingSceneHotspot.y.toFixed(0)}%)</p>
+                <div className="bg-[#1A1208] border border-[#B8955A]/30 p-3 space-y-2 animate-in">
+                  <p className="text-[8px] font-black uppercase text-[#B8955A]">Portal ({pendingSceneHotspot.x.toFixed(0)}%, {pendingSceneHotspot.y.toFixed(0)}%)</p>
                   <input value={sceneHotspotForm.label} onChange={e => setSceneHotspotForm({ ...sceneHotspotForm, label: e.target.value })}
-                    placeholder="Etiqueta..." className="w-full bg-[#2D1B14] border border-white/10 p-1.5 text-[9px] outline-none focus:border-[#C5A059]" />
+                    placeholder="Etiqueta..." className="w-full bg-[#251A0E] border border-white/10 p-1.5 text-[9px] outline-none focus:border-[#B8955A]" />
                   <select value={sceneHotspotForm.type} onChange={e => setSceneHotspotForm({ ...sceneHotspotForm, type: e.target.value as any })}
-                    className="w-full bg-[#2D1B14] border border-white/10 p-1.5 text-[9px] outline-none text-[#D7CCC8]">
+                    className="w-full bg-[#251A0E] border border-white/10 p-1.5 text-[9px] outline-none text-[#D4C9B0]">
                     <option value="scene">→ Escena</option>
                     <option value="map">→ Mapa</option>
                   </select>
                   {sceneHotspotForm.type === 'map' ? (
                     <select value={sceneHotspotForm.targetMapId} onChange={e => setSceneHotspotForm({ ...sceneHotspotForm, targetMapId: e.target.value })}
-                      className="w-full bg-[#2D1B14] border border-white/10 p-1.5 text-[9px] outline-none text-[#D7CCC8]">
+                      className="w-full bg-[#251A0E] border border-white/10 p-1.5 text-[9px] outline-none text-[#D4C9B0]">
                       <option value="">— Mapa destino —</option>
                       {allMaps.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                     </select>
                   ) : (
                     <select value={sceneHotspotForm.targetSceneId} onChange={e => setSceneHotspotForm({ ...sceneHotspotForm, targetSceneId: e.target.value })}
-                      className="w-full bg-[#2D1B14] border border-white/10 p-1.5 text-[9px] outline-none text-[#D7CCC8]">
+                      className="w-full bg-[#251A0E] border border-white/10 p-1.5 text-[9px] outline-none text-[#D4C9B0]">
                       <option value="">— Escena destino —</option>
                       {scenes.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
                     </select>
                   )}
                   <div className="flex gap-2">
                     <button onClick={() => setPendingSceneHotspot(null)} className="flex-1 py-1 border border-white/10 text-[8px] uppercase">Cancelar</button>
-                    <button onClick={addSceneHotspot} className="flex-1 py-1 bg-[#C5A059] text-black text-[8px] font-black uppercase">Añadir</button>
+                    <button onClick={addSceneHotspot} className="flex-1 py-1 bg-[#B8955A] text-black text-[8px] font-black uppercase">Añadir</button>
                   </div>
                 </div>
               )}
@@ -2194,24 +2126,24 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
           )}
         </div>
 
-        <div className="p-4 border-t border-[#C5A059]/15 flex-shrink-0 space-y-2">
+        <div className="p-4 border-t border-[#B8955A]/15 flex-shrink-0 space-y-2">
           <div className="flex flex-wrap gap-1 mb-2">
             <button onClick={() => setSelectedPlayerIds(new Set())}
-              className={`text-[8px] px-2 py-0.5 border ${selectedPlayerIds.size === 0 ? 'border-[#C5A059] text-[#C5A059]' : 'border-white/10 text-white/30'}`}>
+              className={`text-[8px] px-2 py-0.5 border ${selectedPlayerIds.size === 0 ? 'border-[#B8955A] text-[#B8955A]' : 'border-white/10 text-white/30'}`}>
               Todos
             </button>
             {players.map(p => (
               <button key={p.id} onClick={() => toggleSel(p.id)}
-                className={`text-[8px] px-2 py-0.5 border truncate ${selectedPlayerIds.has(p.id) ? 'border-[#C5A059] text-[#C5A059]' : 'border-white/10 text-white/30'}`}>
+                className={`text-[8px] px-2 py-0.5 border truncate ${selectedPlayerIds.has(p.id) ? 'border-[#B8955A] text-[#B8955A]' : 'border-white/10 text-white/30'}`}>
                 {p.name}
               </button>
             ))}
           </div>
-          <button onClick={sendScene} className="w-full bg-white text-black py-2.5 font-black text-[9px] uppercase flex items-center justify-center gap-2 hover:bg-[#C5A059] transition-all">
+          <button onClick={sendScene} className="w-full bg-white text-black py-2.5 font-black text-[9px] uppercase flex items-center justify-center gap-2 hover:bg-[#B8955A] transition-all">
             <Eye size={13} /> Mostrar Escena
           </button>
           {form.shop_items.length > 0 && (
-            <button onClick={sendShop} className="w-full bg-[#C5A059]/15 text-[#C5A059] border border-[#C5A059]/30 py-2.5 font-black text-[9px] uppercase flex items-center justify-center gap-2 hover:bg-[#C5A059] hover:text-black transition-all">
+            <button onClick={sendShop} className="w-full bg-[#B8955A]/15 text-[#B8955A] border border-[#B8955A]/30 py-2.5 font-black text-[9px] uppercase flex items-center justify-center gap-2 hover:bg-[#B8955A] hover:text-black transition-all">
               <ShoppingBag size={13} /> Abrir Tienda
             </button>
           )}
@@ -2219,10 +2151,10 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
 
         {scenes.length > 0 && (
           <div className="border-t border-white/5 p-4 flex-shrink-0">
-            <p className="text-[8px] font-black uppercase text-[#C5A059]/50 mb-2">Guardadas</p>
+            <p className="text-[8px] font-black uppercase text-[#B8955A]/50 mb-2">Guardadas</p>
             <div className="space-y-0.5 max-h-28 overflow-y-auto custom-scrollbar">
               {scenes.map(s => (
-                <div key={s.id} className="flex items-center hover:bg-[#1C1008] group border border-transparent hover:border-[#C5A059]/20">
+                <div key={s.id} className="flex items-center hover:bg-[#1A1208] group border border-transparent hover:border-[#B8955A]/20">
                   <button onClick={() => setForm({ bg_image: s.bg_image, char_image: s.char_image, speaker: s.speaker, dialogue: s.dialogue, has_shop: s.has_shop, shop_items: s.shop_items, hotspots: s.hotspots || [] })}
                     className="flex-1 text-left text-[9px] text-white/50 p-1.5 truncate">{s.title}</button>
                   <button onClick={async () => { await (supabase.from('scenes') as any).delete().eq('id', s.id); setScenes(prev => prev.filter(sc => sc.id !== s.id)); }}
@@ -2253,17 +2185,17 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
             className="z-20 group"
             onClick={(e) => { if (activeTab !== 'portals') { e.stopPropagation(); handlePreviewHotspotClick(hs); } }}>
             <div className={`w-5 h-5 rotate-45 border-2 animate-pulse transition-all hover:scale-125
-              ${hs.type === 'scene' ? 'bg-purple-500/80 border-purple-300' : 'bg-[#C5A059]/80 border-yellow-300'}`} />
-            <div className="absolute left-6 -top-2 bg-[#1C1008]/90 border border-[#C5A059]/50 px-2 py-0.5 text-[8px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap text-white z-50 pointer-events-none">
+              ${hs.type === 'scene' ? 'bg-purple-500/80 border-purple-300' : 'bg-[#B8955A]/80 border-yellow-300'}`} />
+            <div className="absolute left-6 -top-2 bg-[#1A1208]/90 border border-[#B8955A]/50 px-2 py-0.5 text-[8px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap text-white z-50 pointer-events-none">
               {hs.type === 'scene' ? '🎭' : '🗺️'} {hs.label}
             </div>
           </div>
         ))}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[88%] max-w-2xl p-5 bg-[#1C1008]/92 border-t-4 border-[#C5A059]">
-          <div className="absolute -top-6 left-6 bg-[#C5A059] text-[#1C1008] px-5 py-1 text-[9px] font-black uppercase tracking-[0.3em]">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[88%] max-w-2xl p-5 bg-[#1A1208]/92 border-t-4 border-[#B8955A]">
+          <div className="absolute -top-6 left-6 bg-[#B8955A] text-[#1A1208] px-5 py-1 text-[9px] font-black uppercase tracking-[0.3em]">
             {form.speaker || 'Narrador'}
           </div>
-          <p className="text-[#D7CCC8] font-serif text-lg leading-relaxed">
+          <p className="text-[#D4C9B0] font-serif text-lg leading-relaxed">
             {form.dialogue || <span className="opacity-20 italic">El guion...</span>}
           </p>
         </div>
@@ -2311,14 +2243,14 @@ function BestiaryModule() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#0D0704] text-[#D7CCC8]">
-      <header className="p-6 border-b border-[#C5A059]/20 flex justify-between items-center bg-[#1C1008] shadow-xl">
+    <div className="h-full flex flex-col bg-[#0E0B07] text-[#D4C9B0]">
+      <header className="p-6 border-b border-[#B8955A]/20 flex justify-between items-center bg-[#1A1208] shadow-xl">
         <div>
-          <h1 className="font-title text-2xl text-[#C5A059] tracking-tighter italic uppercase font-black">Códice de Amenazas</h1>
+          <h1 className="font-title text-2xl text-[#B8955A] tracking-tighter italic uppercase font-black">Códice de Amenazas</h1>
           <p className="text-[10px] opacity-40 uppercase tracking-[0.3em]">Base de Datos de Entidades</p>
         </div>
         <button onClick={() => setEditingEntity({ name: '', type: 'Enemigo', hp: 100 })}
-          className="bg-[#C5A059] text-black px-6 py-2 font-black text-xs uppercase hover:bg-white transition-all">
+          className="bg-[#B8955A] text-black px-6 py-2 font-black text-xs uppercase hover:bg-white transition-all">
           + Registrar Entidad
         </button>
       </header>
@@ -2327,7 +2259,7 @@ function BestiaryModule() {
         <aside className="w-80 border-r border-white/5 overflow-y-auto custom-scrollbar p-4 space-y-2 bg-black/20">
           {entities.map(entity => (
             <div key={entity.id} onClick={() => setEditingEntity(entity)}
-              className={`p-4 border transition-all cursor-pointer group relative ${editingEntity?.id === entity.id ? 'bg-[#C5A059]/10 border-[#C5A059]' : 'bg-black/40 border-white/5 hover:border-white/20'}`}>
+              className={`p-4 border transition-all cursor-pointer group relative ${editingEntity?.id === entity.id ? 'bg-[#B8955A]/10 border-[#B8955A]' : 'bg-black/40 border-white/5 hover:border-white/20'}`}>
               <div className="flex justify-between items-center">
                 <span className="text-xs font-bold font-title uppercase">{entity.name}</span>
                 <button onClick={(e) => { e.stopPropagation(); deleteEntity(entity.id); }}
@@ -2343,14 +2275,14 @@ function BestiaryModule() {
             <div className="max-w-2xl mx-auto space-y-8 animate-in">
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase text-[#C5A059] tracking-widest">Nombre</label>
+                  <label className="text-[9px] font-black uppercase text-[#B8955A] tracking-widest">Nombre</label>
                   <input value={editingEntity.name} onChange={e => setEditingEntity({ ...editingEntity, name: e.target.value })}
-                    className="w-full bg-[#1C1008] border border-[#C5A059]/30 p-3 text-sm outline-none focus:border-[#C5A059] text-white" />
+                    className="w-full bg-[#1A1208] border border-[#B8955A]/30 p-3 text-sm outline-none focus:border-[#B8955A] text-white" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase text-[#C5A059] tracking-widest">Categoría</label>
+                  <label className="text-[9px] font-black uppercase text-[#B8955A] tracking-widest">Categoría</label>
                   <select value={editingEntity.type} onChange={e => setEditingEntity({ ...editingEntity, type: e.target.value })}
-                    className="w-full bg-[#1C1008] border border-[#C5A059]/30 p-3 text-sm outline-none text-white cursor-pointer">
+                    className="w-full bg-[#1A1208] border border-[#B8955A]/30 p-3 text-sm outline-none text-white cursor-pointer">
                     <option value="Enemigo">Amenaza</option>
                     <option value="NPC">Neutral (NPC)</option>
                     <option value="JUGADOR">Operativo</option>
@@ -2359,24 +2291,24 @@ function BestiaryModule() {
               </div>
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase text-[#C5A059] tracking-widest">HP</label>
+                  <label className="text-[9px] font-black uppercase text-[#B8955A] tracking-widest">HP</label>
                   <input type="number" value={editingEntity.hp} onChange={e => setEditingEntity({ ...editingEntity, hp: Number(e.target.value) })}
-                    className="w-full bg-[#1C1008] border border-[#C5A059]/30 p-3 text-sm outline-none focus:border-[#C5A059]" />
+                    className="w-full bg-[#1A1208] border border-[#B8955A]/30 p-3 text-sm outline-none focus:border-[#B8955A]" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase text-[#C5A059] tracking-widest">URL Imagen</label>
+                  <label className="text-[9px] font-black uppercase text-[#B8955A] tracking-widest">URL Imagen</label>
                   <input value={editingEntity.image_url || ''} onChange={e => setEditingEntity({ ...editingEntity, image_url: e.target.value })}
-                    className="w-full bg-[#1C1008] border border-[#C5A059]/30 p-3 text-sm outline-none focus:border-[#C5A059]" placeholder="https://..." />
+                    className="w-full bg-[#1A1208] border border-[#B8955A]/30 p-3 text-sm outline-none focus:border-[#B8955A]" placeholder="https://..." />
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-[9px] font-black uppercase text-[#C5A059] tracking-widest">Descripción</label>
+                <label className="text-[9px] font-black uppercase text-[#B8955A] tracking-widest">Descripción</label>
                 <textarea value={editingEntity.description || ''} onChange={e => setEditingEntity({ ...editingEntity, description: e.target.value })}
-                  className="w-full bg-[#1C1008] border border-[#C5A059]/30 p-4 text-sm outline-none h-40 resize-none font-serif italic" />
+                  className="w-full bg-[#1A1208] border border-[#B8955A]/30 p-4 text-sm outline-none h-40 resize-none font-serif italic" />
               </div>
               <div className="flex gap-4">
                 <button onClick={saveEntity} disabled={isSaving}
-                  className="flex-1 bg-[#C5A059] text-black py-4 font-black uppercase text-xs tracking-widest hover:bg-white transition-all disabled:opacity-30">
+                  className="flex-1 bg-[#B8955A] text-black py-4 font-black uppercase text-xs tracking-widest hover:bg-white transition-all disabled:opacity-30">
                   {isSaving ? 'Registrando...' : 'Confirmar Registro'}
                 </button>
                 <button onClick={() => setEditingEntity(null)}
@@ -2430,51 +2362,51 @@ function ShopManagerModule({ players }: { players: Player[] }) {
   };
 
   return (
-    <div className="h-full w-full bg-[#1C1008] flex animate-in">
-      <aside style={{ width: '300px' }} className="bg-[#2D1B14] border-r border-[#C5A059]/15 flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-[#C5A059]/15">
+    <div className="h-full w-full bg-[#1A1208] flex animate-in">
+      <aside style={{ width: '300px' }} className="bg-[#251A0E] border-r border-[#B8955A]/15 flex flex-col overflow-hidden">
+        <div className="p-4 border-b border-[#B8955A]/15">
           <h3 className="font-title text-lg font-bold mb-3">Nuevo Artículo</h3>
           <div className="space-y-2">
             <div className="flex gap-2">
               <input value={form.icon} onChange={e => setForm({ ...form, icon: e.target.value })}
-                className="w-14 bg-[#1C1008] border border-white/10 p-2 text-xl text-center outline-none focus:border-[#C5A059]" placeholder="🗡️" />
+                className="w-14 bg-[#1A1208] border border-white/10 p-2 text-xl text-center outline-none focus:border-[#B8955A]" placeholder="🗡️" />
               <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                className="flex-1 bg-[#1C1008] border-b border-[#C5A059]/30 p-2 text-white outline-none font-serif" placeholder="Nombre" />
+                className="flex-1 bg-[#1A1208] border-b border-[#B8955A]/30 p-2 text-white outline-none font-serif" placeholder="Nombre" />
             </div>
             <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
-              className="w-full bg-[#1C1008] border border-white/8 p-2 text-xs outline-none resize-none h-12 focus:border-[#C5A059]" placeholder="Descripción..." />
+              className="w-full bg-[#1A1208] border border-white/8 p-2 text-xs outline-none resize-none h-12 focus:border-[#B8955A]" placeholder="Descripción..." />
             <div className="flex gap-2">
               <div className="flex-1">
-                <label className="text-[8px] uppercase font-black text-[#C5A059] mb-0.5 block">Precio</label>
+                <label className="text-[8px] uppercase font-black text-[#B8955A] mb-0.5 block">Precio</label>
                 <input type="number" value={form.price}
                   onChange={e => setForm({ ...form, price: +e.target.value, sell_price: Math.floor(+e.target.value / 2) })}
-                  className="w-full bg-[#1C1008] border border-white/8 p-1.5 text-xs outline-none focus:border-[#C5A059]" />
+                  className="w-full bg-[#1A1208] border border-white/8 p-1.5 text-xs outline-none focus:border-[#B8955A]" />
               </div>
               <div className="flex-1">
-                <label className="text-[8px] uppercase font-black text-[#C5A059] mb-0.5 block">Venta</label>
+                <label className="text-[8px] uppercase font-black text-[#B8955A] mb-0.5 block">Venta</label>
                 <input type="number" value={form.sell_price} onChange={e => setForm({ ...form, sell_price: +e.target.value })}
-                  className="w-full bg-[#1C1008] border border-white/8 p-1.5 text-xs outline-none focus:border-[#C5A059]" />
+                  className="w-full bg-[#1A1208] border border-white/8 p-1.5 text-xs outline-none focus:border-[#B8955A]" />
               </div>
             </div>
             <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}
-              className="w-full bg-[#1C1008] border border-white/8 p-1.5 text-xs outline-none text-[#D7CCC8]">
+              className="w-full bg-[#1A1208] border border-white/8 p-1.5 text-xs outline-none text-[#D4C9B0]">
               {Object.keys(CATEGORY_ICONS).map(c => <option key={c} value={c}>{CATEGORY_ICONS[c]} {c}</option>)}
             </select>
-            <button onClick={createItem} className="w-full bg-[#C5A059] text-[#1C1008] py-2.5 font-black uppercase text-[9px] tracking-widest hover:bg-white transition-all">
+            <button onClick={createItem} className="w-full bg-[#B8955A] text-[#1A1208] py-2.5 font-black uppercase text-[9px] tracking-widest hover:bg-white transition-all">
               + Añadir al Catálogo
             </button>
-            <button onClick={seedItems} className="w-full border border-[#C5A059]/25 text-[#C5A059]/60 py-2 font-black uppercase text-[8px] hover:border-[#C5A059] hover:text-[#C5A059] transition-all">
+            <button onClick={seedItems} className="w-full border border-[#B8955A]/25 text-[#B8955A]/60 py-2 font-black uppercase text-[8px] hover:border-[#B8955A] hover:text-[#B8955A] transition-all">
               ✦ Generar Items de Muestra
             </button>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
-          <p className="text-[8px] font-black uppercase text-[#C5A059]/50 mb-2">Gestión de Jugadores</p>
+          <p className="text-[8px] font-black uppercase text-[#B8955A]/50 mb-2">Gestión de Jugadores</p>
           <div className="flex flex-wrap gap-1 mb-3">
             {players.map(p => (
               <button key={p.id} onClick={() => setActivePlayer(p.id)}
-                className={`text-[8px] px-2 py-0.5 border ${activePlayer === p.id ? 'border-[#C5A059] text-[#C5A059]' : 'border-white/10 text-white/30'}`}>
+                className={`text-[8px] px-2 py-0.5 border ${activePlayer === p.id ? 'border-[#B8955A] text-[#B8955A]' : 'border-white/10 text-white/30'}`}>
                 {p.name}
               </button>
             ))}
@@ -2484,19 +2416,19 @@ function ShopManagerModule({ players }: { players: Player[] }) {
               <p className="text-[8px] text-white/30 mb-2 italic">Inventario de {players.find(p => p.id === activePlayer)?.name}</p>
               {inventory.length === 0 && <p className="text-[9px] opacity-20 italic text-center py-2">Vacío</p>}
               {inventory.map(inv => (
-                <div key={inv.id} className="flex items-center gap-2 bg-[#1C1008] border border-white/5 p-2 mb-1">
+                <div key={inv.id} className="flex items-center gap-2 bg-[#1A1208] border border-white/5 p-2 mb-1">
                   <span>{inv.shop_items?.icon}</span>
                   <span className="text-[9px] flex-1">{inv.shop_items?.name} ×{inv.quantity}</span>
                   <button onClick={async () => { await (supabase.from('player_inventory') as any).delete().eq('id', inv.id); reloadInventory(); }} className="text-red-500/50 hover:text-red-500"><X size={11} /></button>
                 </div>
               ))}
-              <p className="text-[8px] text-[#C5A059]/40 mt-3 mb-1 font-black uppercase">Dar objeto:</p>
+              <p className="text-[8px] text-[#B8955A]/40 mt-3 mb-1 font-black uppercase">Dar objeto:</p>
               <div className="space-y-0.5 max-h-40 overflow-y-auto custom-scrollbar">
                 {items.map(item => (
                   <button key={item.id} onClick={() => giveItem(item.id, activePlayer)}
-                    className="w-full text-left p-1.5 bg-black/20 text-[9px] hover:bg-[#C5A059]/10 border border-transparent hover:border-[#C5A059]/20 flex items-center gap-2">
+                    className="w-full text-left p-1.5 bg-black/20 text-[9px] hover:bg-[#B8955A]/10 border border-transparent hover:border-[#B8955A]/20 flex items-center gap-2">
                     <span>{item.icon}</span><span className="flex-1 truncate">{item.name}</span>
-                    <Gift size={10} className="text-[#C5A059]/50" />
+                    <Gift size={10} className="text-[#B8955A]/50" />
                   </button>
                 ))}
               </div>
@@ -2511,12 +2443,12 @@ function ShopManagerModule({ players }: { players: Player[] }) {
         </h2>
         <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
           {items.map(item => (
-            <div key={item.id} className="bg-[#2D1B14] border border-white/5 p-4 hover:border-[#C5A059]/30 transition-all group relative">
+            <div key={item.id} className="bg-[#251A0E] border border-white/5 p-4 hover:border-[#B8955A]/30 transition-all group relative">
               <div className="flex items-start gap-3 mb-3">
                 <span className="text-3xl">{item.icon || CATEGORY_ICONS[item.category] || '📦'}</span>
                 <div className="flex-1">
                   <h4 className="font-title font-bold text-sm">{item.name}</h4>
-                  <span className="text-[8px] uppercase text-[#C5A059]/50">{item.category}</span>
+                  <span className="text-[8px] uppercase text-[#B8955A]/50">{item.category}</span>
                 </div>
                 <button onClick={async () => { await (supabase.from('shop_items') as any).delete().eq('id', item.id); setItems(prev => prev.filter(i => i.id !== item.id)); }}
                   className="opacity-0 group-hover:opacity-100 text-red-500/40 hover:text-red-500 transition-all"><Trash2 size={14} /></button>
@@ -2575,14 +2507,14 @@ function PDFReaderModule() {
   };
 
   return (
-    <div className="flex-1 flex h-full bg-[#1C1008] animate-in overflow-hidden">
-      <aside style={{ width: '220px', minWidth: '220px' }} className="bg-[#2D1B14] border-r border-[#C5A059]/15 flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-[#C5A059]/20 flex items-center justify-between">
+    <div className="flex-1 flex h-full bg-[#1A1208] animate-in overflow-hidden">
+      <aside style={{ width: '220px', minWidth: '220px' }} className="bg-[#251A0E] border-r border-[#B8955A]/15 flex flex-col overflow-hidden">
+        <div className="p-4 border-b border-[#B8955A]/20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <BookOpen size={14} className="text-[#C5A059]" />
-            <h3 className="font-title text-sm font-bold text-[#C5A059]">Biblioteca</h3>
+            <BookOpen size={14} className="text-[#B8955A]" />
+            <h3 className="font-title text-sm font-bold text-[#B8955A]">Biblioteca</h3>
           </div>
-          <label className="bg-[#C5A059] text-[#1C1008] px-2 py-1 text-[8px] font-black uppercase cursor-pointer hover:bg-white transition-all flex items-center gap-1">
+          <label className="bg-[#B8955A] text-[#1A1208] px-2 py-1 text-[8px] font-black uppercase cursor-pointer hover:bg-white transition-all flex items-center gap-1">
             <Plus size={10} /> PDF
             <input type="file" accept="application/pdf" onChange={openFile} className="hidden" />
           </label>
@@ -2595,14 +2527,14 @@ function PDFReaderModule() {
             </div>
           ) : (
             <>
-              <p className="text-[8px] font-black uppercase text-[#C5A059]/50 mb-3">Recientes</p>
+              <p className="text-[8px] font-black uppercase text-[#B8955A]/50 mb-3">Recientes</p>
               <div className="space-y-1">
                 {recentPdfs.map(pdf => (
                   <div key={pdf.name}
-                    className={`group flex items-center gap-2 p-2 border cursor-pointer transition-all ${currentPdfName === pdf.name ? 'border-[#C5A059] bg-[#C5A059]/10' : 'border-white/5 bg-[#1C1008] hover:border-[#C5A059]/30'}`}>
-                    <FileText size={14} className={currentPdfName === pdf.name ? 'text-[#C5A059]' : 'text-white/30'} />
+                    className={`group flex items-center gap-2 p-2 border cursor-pointer transition-all ${currentPdfName === pdf.name ? 'border-[#B8955A] bg-[#B8955A]/10' : 'border-white/5 bg-[#1A1208] hover:border-[#B8955A]/30'}`}>
+                    <FileText size={14} className={currentPdfName === pdf.name ? 'text-[#B8955A]' : 'text-white/30'} />
                     <button onClick={() => { setCurrentPdfUrl(pdf.url); setCurrentPdfName(pdf.name); }} className="flex-1 text-left min-w-0">
-                      <p className="text-[9px] font-bold truncate" style={{ color: currentPdfName === pdf.name ? '#C5A059' : 'rgba(215,204,200,0.75)' }}>{pdf.name}</p>
+                      <p className="text-[9px] font-bold truncate" style={{ color: currentPdfName === pdf.name ? '#B8955A' : 'rgba(215,204,200,0.75)' }}>{pdf.name}</p>
                     </button>
                     <button onClick={() => setRecentPdfs(prev => prev.filter(p => p.name !== pdf.name))}
                       className="opacity-0 group-hover:opacity-100 text-red-500/40 hover:text-red-500 transition-all p-0.5 flex-shrink-0">
@@ -2617,14 +2549,14 @@ function PDFReaderModule() {
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#C5A059]/20 flex items-center justify-between bg-[#1C1008] flex-shrink-0">
+        <div className="px-6 py-4 border-b border-[#B8955A]/20 flex items-center justify-between bg-[#1A1208] flex-shrink-0">
           <h2 className="font-display text-2xl font-bold italic">{currentPdfName || 'Atril vacío'}</h2>
-          <label className="bg-[#C5A059]/10 border border-[#C5A059]/30 text-[#C5A059] px-4 py-2 text-[9px] font-black uppercase cursor-pointer hover:bg-[#C5A059] hover:text-[#1C1008] transition-all flex items-center gap-2">
+          <label className="bg-[#B8955A]/10 border border-[#B8955A]/30 text-[#B8955A] px-4 py-2 text-[9px] font-black uppercase cursor-pointer hover:bg-[#B8955A] hover:text-[#1A1208] transition-all flex items-center gap-2">
             <BookOpen size={13} /> {currentPdfUrl ? 'Cambiar PDF' : 'Abrir PDF'}
             <input type="file" accept="application/pdf" onChange={openFile} className="hidden" />
           </label>
         </div>
-        <div className="flex-1 bg-[#0D0704] relative overflow-hidden">
+        <div className="flex-1 bg-[#0E0B07] relative overflow-hidden">
           {currentPdfUrl ? (
             <iframe src={currentPdfUrl} className="absolute inset-0 w-full h-full border-none" title={currentPdfName} />
           ) : (
@@ -2642,5 +2574,25 @@ function PDFReaderModule() {
 // ─── EXPORT ───────────────────────────────────────────────────────────────────
 
 export default function App() {
-  return <BrowserRouter><VellumLayout /></BrowserRouter>;
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap');
+        html, body, #root { height: 100%; margin: 0; background: #0E0B07; color: #D4C9B0; }
+        .font-display { font-family: 'Cinzel Decorative', serif; }
+        .font-serif { font-family: 'EB Garamond', Georgia, serif; }
+        .font-title { font-family: 'Cinzel', serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #B8955A40; border-radius: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #B8955A; }
+        * { scrollbar-width: thin; scrollbar-color: #B8955A40 transparent; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeIn 0.4s ease forwards; }
+        @keyframes pulse-amber { 0%,100% { box-shadow: 0 0 0 0 #B8955A30; } 50% { box-shadow: 0 0 0 8px transparent; } }
+        .pulse-gold { animation: pulse-amber 2s infinite; }
+      `}</style>
+      <BrowserRouter><VellumLayout /></BrowserRouter>
+    </>
+  );
 }
