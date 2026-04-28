@@ -493,7 +493,6 @@ function UserCharactersPanel({ user, players, onSelectPlayer, selectedPlayerId, 
               )}
               <span className="font-title font-bold text-sm tracking-wide text-center">{p.name}</span>
               <div className="flex gap-3 text-[9px] opacity-50">
-                <span>❤️ {p.hp}/{p.max_hp}</span>
                 <span>🪙 {p.gold}</span>
               </div>
             </Link>
@@ -892,7 +891,7 @@ function PlayerSelector({ players, selectedId, onSelect }: {
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-8 p-12">
       <h2 className="font-title text-3xl font-bold tracking-widest text-[#B8955A]">¿Quién eres?</h2>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-5 w-full max-w-2xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 w-full max-w-2xl">
         {players.map(p => (
           <Link key={p.id} to="/play" onClick={() => onSelect(p.id)}
             className={`flex flex-col items-center gap-3 p-6 border transition-all rounded-sm ${
@@ -908,7 +907,7 @@ function PlayerSelector({ players, selectedId, onSelect }: {
             )}
             <span className="font-title font-bold text-base tracking-wide">{p.name}</span>
             <div className="flex gap-4 text-[10px] opacity-60">
-              <span>❤️ {p.hp}</span><span>🪙 {p.gold}</span>
+              <span>🪙 {p.gold}</span>
             </div>
           </Link>
         ))}
@@ -922,15 +921,24 @@ function PlayerSelector({ players, selectedId, onSelect }: {
 function SceneView({ sceneData, onHotspotClick }: {
   sceneData: any; onHotspotClick?: (hs: any) => void;
 }) {
+  // El cuadro de texto solo se muestra si hay speaker o dialogue
+  const hasDialogue = sceneData.speaker?.trim() || sceneData.dialogue?.trim();
+  // El sprite se ajusta si no hay cuadro de texto (ocupa más pantalla)
+  const spriteBottom = hasDialogue ? 'bottom-[160px]' : 'bottom-4';
+
   return (
-    <div className="absolute inset-0">
+    <div className="absolute inset-0 overflow-hidden">
+      {/* Fondo */}
       <div className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: sceneData.bg_image ? `url(${sceneData.bg_image})` : 'none', filter: 'brightness(0.65)' }} />
+
+      {/* Sprite personaje — se adapta si hay o no cuadro de texto */}
       {sceneData.char_image && (
         <img src={sceneData.char_image}
-          className="absolute bottom-[140px] left-1/2 -translate-x-1/2 h-[72%] object-contain drop-shadow-[0_0_60px_rgba(0,0,0,0.9)]"
+          className={`absolute left-1/2 -translate-x-1/2 h-[72%] object-contain drop-shadow-[0_0_60px_rgba(0,0,0,0.9)] transition-all duration-500 ${spriteBottom}`}
           alt="sprite" />
       )}
+
       {/* Portales de escena */}
       {(sceneData.hotspots || []).map((hs: SceneHotspot) => (
         <div key={hs.id}
@@ -945,12 +953,26 @@ function SceneView({ sceneData, onHotspotClick }: {
           </div>
         </div>
       ))}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[88%] max-w-2xl p-5 bg-[#1A1208]/92 backdrop-blur-sm border-t-4 border-[#B8955A]">
-        <div className="absolute -top-6 left-6 bg-[#B8955A] text-[#1A1208] px-5 py-1 text-[10px] font-black uppercase tracking-[0.3em]">
-          {sceneData.speaker || 'Narrador'}
+
+      {/* Cuadro de diálogo — solo visible si hay contenido, se expande con el texto */}
+      {hasDialogue && (
+        <div className="absolute bottom-0 left-0 right-0 z-20">
+          <div className="mx-auto w-[92%] max-w-3xl mb-6">
+            {/* Etiqueta de hablante */}
+            {sceneData.speaker?.trim() && (
+              <div className="inline-block bg-[#B8955A] text-[#1A1208] px-5 py-1 text-[10px] font-black uppercase tracking-[0.3em] mb-0 relative z-10 ml-6">
+                {sceneData.speaker}
+              </div>
+            )}
+            {/* Cuerpo del diálogo — max dos líneas, luego scroll interno suave */}
+            <div className="bg-[#1A1208]/94 backdrop-blur-sm border-t-4 border-[#B8955A] p-5 max-h-[40vh] overflow-y-auto custom-scrollbar">
+              <p className="text-[#D4C9B0] font-serif text-lg leading-relaxed whitespace-pre-wrap">
+                {sceneData.dialogue}
+              </p>
+            </div>
+          </div>
         </div>
-        <p className="text-[#D4C9B0] font-serif text-lg leading-relaxed">{sceneData.dialogue}</p>
-      </div>
+      )}
     </div>
   );
 }
@@ -1102,10 +1124,10 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
   );
 
   return (
-    <div className="flex h-full w-full relative overflow-hidden" style={{ backgroundColor: '#0E0B07' }}>
+    <div className="flex flex-col md:flex-row h-full w-full relative overflow-hidden" style={{ backgroundColor: '#0E0B07' }}>
 
       {/* ── CENTRO: Visor Principal Expandido ── */}
-      <main className="flex-1 relative overflow-hidden">
+      <main className="flex-1 relative overflow-hidden min-h-0">
 
         {/* 🛡️ Botón Flotante del Operativo */}
         <div className="absolute top-4 left-4 z-[200]">
@@ -1117,7 +1139,7 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
 
         {/* 🛡️ Módulo de Estado Oculto */}
         {showSheet && (
-          <div className="absolute top-16 left-4 z-[200] w-[260px] max-h-[85vh] flex flex-col bg-[#1A1208]/95 backdrop-blur-md border border-[#B8955A]/30 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="absolute top-16 left-4 z-[200] w-[min(260px,calc(100vw-2rem))] max-h-[85vh] flex flex-col bg-[#1A1208]/95 backdrop-blur-md border border-[#B8955A]/30 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             {/* Selector de Entidad */}
             {ownedPlayers.length > 1 && (
               <div className="p-2 bg-black/60 border-b border-[#B8955A]/20">
@@ -1138,8 +1160,7 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
                 </div>
               )}
               <h2 className="font-title text-sm font-bold text-center uppercase tracking-tighter italic">{player?.name ?? '...'}</h2>
-              <div className="w-full space-y-2">
-                <StatBar label="HP" value={player?.hp ?? 0} max={player?.max_hp ?? 100} color="#ef4444" />
+              <div className="w-full">
                 <div className="flex justify-between border-b border-white/5 pb-1">
                   <span className="text-[9px] uppercase font-black opacity-40">Oro</span>
                   <span className="font-serif text-yellow-400 font-bold text-sm">🪙 {player?.gold ?? 0}</span>
@@ -1287,9 +1308,10 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
         )}
       </main>
 
-      {/* ── DERECHA: Chat Ampliado a 340px ── */}
-      <aside style={{ width: '340px', minWidth: '340px' }}
-        className="bg-[rgb(21,13,8)] border-l border-white/5 flex flex-col shadow-2xl z-20">
+      {/* Chat — lateral en desktop, abajo en móvil */}
+      <aside
+        className="bg-[rgb(21,13,8)] border-t border-l border-white/5 flex flex-col shadow-2xl z-20
+          h-[220px] md:h-auto md:w-[300px] flex-shrink-0">
         <ChatPanel authorName={player?.name ?? 'Jugador'} isDM={false} compact />
       </aside>
     </div>
@@ -1572,7 +1594,7 @@ function MasterDashboard({ players, setPlayers }: {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold font-title truncate">{p.name}</p>
-                    <p className="text-[9px] opacity-40">❤️{p.hp} &nbsp; 🪙{p.gold}</p>
+                    <p className="text-[9px] opacity-40">🪙{p.gold}</p>
                   </div>
                   <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all">
                     <button onClick={() => setInspectingId(p.id === inspectingId ? null : p.id)}
@@ -2177,7 +2199,9 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
         <div className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: form.bg_image ? `url(${form.bg_image})` : 'none', filter: 'brightness(0.65)' }} />
         {form.char_image && (
-          <img src={form.char_image} className="absolute bottom-[140px] left-1/2 -translate-x-1/2 h-[72%] object-contain drop-shadow-[0_0_60px_rgba(0,0,0,0.9)]" alt="sprite" />
+          <img src={form.char_image}
+            className={`absolute left-1/2 -translate-x-1/2 h-[72%] object-contain drop-shadow-[0_0_60px_rgba(0,0,0,0.9)] transition-all ${(form.speaker || form.dialogue) ? 'bottom-[160px]' : 'bottom-4'}`}
+            alt="sprite" />
         )}
         {form.hotspots.map(hs => (
           <div key={hs.id}
