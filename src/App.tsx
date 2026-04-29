@@ -1164,6 +1164,8 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
   const [activeTab, setActiveTab] = useState<'inv' | 'bio'>('inv');
   const [buyFeedback, setBuyFeedback] = useState<string | null>(null);
   const [lastRoll, setLastRoll] = useState<number | null>(null);
+  // Recuerda la última escena para mostrarla de fondo cuando se abre la tienda
+  const lastSceneData = useRef<any>(null);
 
   const { rollPublic } = useChat(player?.name ?? 'Jugador', false);
 
@@ -1255,6 +1257,10 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
 
   const mode = view?.mode ?? 'MAP';
   const data = view?.data ?? {};
+
+  // Guardar la última escena vista para usarla de fondo cuando se abre la tienda
+  if (mode === 'SCENE' && data.bg_image) lastSceneData.current = data;
+  const shopSceneBase = lastSceneData.current ?? {};
 
   // Items visibles en tienda según lo que el DM configuró
   const shopVisible = shopItems.filter(item =>
@@ -1390,10 +1396,10 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
           />
         )}
 
-        {/* Tienda — misma SceneView con panel lateral, sin overlay */}
+        {/* Tienda — se muestra sobre la última escena vista, personaje incluido */}
         {mode === 'SHOP' && (
           <SceneView
-            sceneData={{ ...data, has_shop: true, hotspots: [] }}
+            sceneData={{ ...shopSceneBase, has_shop: true, hotspots: [] }}
             shopItems={shopVisible}
             onBuy={handleBuy}
             playerGold={player?.gold}
