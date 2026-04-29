@@ -493,6 +493,7 @@ function UserCharactersPanel({ user, players, onSelectPlayer, selectedPlayerId, 
               )}
               <span className="font-title font-bold text-sm tracking-wide text-center">{p.name}</span>
               <div className="flex gap-3 text-[9px] opacity-50">
+                <span>❤️ {p.hp}/{p.max_hp}</span>
                 <span>🪙 {p.gold}</span>
               </div>
             </Link>
@@ -647,9 +648,8 @@ useEffect(() => { seedSampleItems(); }, []);
   if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
 
   return (
-    <div className="h-screen w-screen flex flex-col text-[#D4C9B0] overflow-hidden font-sans select-none relative" style={{ backgroundColor: '#1A1208' }}>
+    <div className="h-screen w-screen flex flex-col text-[#D4C9B0] overflow-hidden font-sans select-none" style={{ backgroundColor: '#1A1208' }}>
       <style>{`
-
         @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap');
         .font-display { font-family: 'Cinzel Decorative', serif; }
         .font-serif { font-family: 'EB Garamond', Georgia, serif; }
@@ -665,26 +665,27 @@ useEffect(() => { seedSampleItems(); }, []);
         .pulse-gold { animation: pulse-gold 2s infinite; }
       `}</style>
 
-      {!isHome && (
-        <Link to="/" className="fixed top-4 left-4 z-[200] bg-[#251A0E] border border-[#B8955A]/50 p-2.5 rounded-full text-[#B8955A] hover:bg-[#B8955A] hover:text-[#1A1208] transition-all shadow-2xl flex items-center gap-2 group">
-          <Home size={18} />
-          <span className="text-[9px] font-black uppercase tracking-widest hidden group-hover:inline pr-1">Nexo</span>
-        </Link>
-      )}
+      {/* ── NAVBAR INTEGRADA — no flota, forma parte del layout ─────────── */}
+      <nav className="flex-shrink-0 h-10 bg-[#0E0B07] border-b border-[#B8955A]/15 flex items-center px-3 gap-2 z-50">
+        {!isHome && (
+          <Link to="/" className="flex items-center gap-1.5 px-2.5 py-1 bg-[#251A0E] border border-[#B8955A]/30 text-[#B8955A] hover:bg-[#B8955A] hover:text-black transition-all text-[9px] font-black uppercase tracking-wider">
+            <Home size={11} /> Nexo
+          </Link>
+        )}
+        {isHome && (
+          <span className="font-display text-[#B8955A] text-sm font-black tracking-tight italic">VELLUM</span>
+        )}
+        <div className="flex-1" />
+        <span className="text-[9px] font-black uppercase tracking-[0.15em] text-[#B8955A]/60">
+          {currentUser.username}
+        </span>
+        <div className="w-px h-4 bg-white/10" />
+        <button onClick={handleLogout} className="p-1.5 text-white/30 hover:text-red-400 transition-colors" title="Cerrar sesión">
+          <X size={13} />
+        </button>
+      </nav>
 
-      {/* Barra de mando optimizada */}
-      <div className="fixed top-4 right-4 z-[250] flex items-center gap-4 bg-black/20 p-2 pl-4 rounded-full border border-white/5 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <span className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: '#B8955A' }}>
-            {currentUser.username}
-          </span>
-          <button onClick={handleLogout} className="p-1.5 hover:text-red-500 transition-colors opacity-40 hover:opacity-100">
-            <X size={14} />
-          </button>
-        </div>
-      </div>
-
-      <main className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex overflow-hidden min-h-0">
         <Routes>
           <Route path="/" element={isDM
             ? <MasterDashboard players={players} setPlayers={setPlayers} />
@@ -863,6 +864,53 @@ function ChatPanel({ authorName, isDM, compact = false }: {
 
 // ─── STAT BAR ─────────────────────────────────────────────────────────────────
 
+
+// ─── TARJETA DE NOTA DE BIOGRAFÍA (editable y borrable) ──────────────────────
+
+function BioEntryCard({ entry, onDelete, onEdit }: {
+  entry: BiographyEntry;
+  onDelete: (id: string) => void;
+  onEdit: (id: string, newContent: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(entry.content);
+
+  return (
+    <div className={`p-2 border-l-2 text-[9px] font-serif leading-relaxed group relative
+      ${entry.is_dm ? 'border-[#B8955A] bg-[#B8955A]/5 italic text-[#B8955A]/80' : 'border-white/20 text-[#D4C9B0]/75'}`}>
+      <span className="text-[6px] font-black uppercase opacity-40 block mb-0.5 not-italic">{entry.author}</span>
+      {editing ? (
+        <div className="space-y-1">
+          <textarea
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            rows={3}
+            className="w-full bg-black/40 border border-[#B8955A]/30 p-1.5 text-[9px] font-serif outline-none resize-none focus:border-[#B8955A] not-italic text-[#D4C9B0]"
+          />
+          <div className="flex gap-1">
+            <button onClick={() => { onEdit(entry.id, draft); setEditing(false); }}
+              className="flex-1 py-0.5 bg-[#B8955A] text-black text-[7px] font-black uppercase">Guardar</button>
+            <button onClick={() => { setDraft(entry.content); setEditing(false); }}
+              className="flex-1 py-0.5 border border-white/10 text-[7px] uppercase text-white/40">Cancelar</button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className="whitespace-pre-wrap">{entry.content}</p>
+          {!entry.is_dm && (
+            <div className="absolute top-1.5 right-1.5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button onClick={() => setEditing(true)}
+                className="p-0.5 text-[#B8955A]/50 hover:text-[#B8955A]"><Edit2 size={9} /></button>
+              <button onClick={() => onDelete(entry.id)}
+                className="p-0.5 text-red-500/40 hover:text-red-500"><Trash2 size={9} /></button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function StatBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
   const pct = Math.min(100, Math.max(0, (value / (max || 1)) * 100));
   return (
@@ -891,7 +939,7 @@ function PlayerSelector({ players, selectedId, onSelect }: {
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-8 p-12">
       <h2 className="font-title text-3xl font-bold tracking-widest text-[#B8955A]">¿Quién eres?</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 w-full max-w-2xl">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-5 w-full max-w-2xl">
         {players.map(p => (
           <Link key={p.id} to="/play" onClick={() => onSelect(p.id)}
             className={`flex flex-col items-center gap-3 p-6 border transition-all rounded-sm ${
@@ -907,7 +955,7 @@ function PlayerSelector({ players, selectedId, onSelect }: {
             )}
             <span className="font-title font-bold text-base tracking-wide">{p.name}</span>
             <div className="flex gap-4 text-[10px] opacity-60">
-              <span>🪙 {p.gold}</span>
+              <span>❤️ {p.hp}</span><span>🪙 {p.gold}</span>
             </div>
           </Link>
         ))}
@@ -918,59 +966,111 @@ function PlayerSelector({ players, selectedId, onSelect }: {
 
 // ─── ESCENA ───────────────────────────────────────────────────────────────────
 
-function SceneView({ sceneData, onHotspotClick }: {
+function SceneView({ sceneData, onHotspotClick, shopItems, onBuy, playerGold, inventory, onSell }: {
   sceneData: any; onHotspotClick?: (hs: any) => void;
+  // Props opcionales para tienda lateral integrada
+  shopItems?: any[]; onBuy?: (item: any) => void;
+  playerGold?: number; inventory?: any[]; onSell?: (inv: any) => void;
 }) {
-  // El cuadro de texto solo se muestra si hay speaker o dialogue
   const hasDialogue = sceneData.speaker?.trim() || sceneData.dialogue?.trim();
-  // El sprite se ajusta si no hay cuadro de texto (ocupa más pantalla)
-  const spriteBottom = hasDialogue ? 'bottom-[160px]' : 'bottom-4';
+  const hasShop = sceneData.has_shop && shopItems && shopItems.length > 0;
+  const pos = sceneData.char_position ?? 'center';
+
+  // Posición horizontal del sprite
+  const spriteStyle: React.CSSProperties = {
+    position: 'absolute',
+    bottom: hasDialogue ? '160px' : '16px',
+    height: '72%',
+    objectFit: 'contain' as const,
+    filter: 'drop-shadow(0 0 60px rgba(0,0,0,0.9))',
+    transition: 'all 0.5s',
+    ...(pos === 'left'   ? { left: '8%',  transform: 'none' } :
+       pos === 'right'  ? { right: '8%', transform: 'none' } :
+       { left: '50%', transform: 'translateX(-50%)' }),
+  };
 
   return (
-    <div className="absolute inset-0 overflow-hidden">
-      {/* Fondo */}
-      <div className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: sceneData.bg_image ? `url(${sceneData.bg_image})` : 'none', filter: 'brightness(0.65)' }} />
+    <div className="absolute inset-0 flex overflow-hidden">
+      {/* Área escena — ocupa todo o 60% si hay tienda lateral */}
+      <div className={`relative overflow-hidden ${hasShop ? 'flex-1' : 'absolute inset-0'}`}>
+        {/* Fondo */}
+        <div className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: sceneData.bg_image ? `url(${sceneData.bg_image})` : 'none', filter: 'brightness(0.65)' }} />
 
-      {/* Sprite personaje — se adapta si hay o no cuadro de texto */}
-      {sceneData.char_image && (
-        <img src={sceneData.char_image}
-          className={`absolute left-1/2 -translate-x-1/2 h-[72%] object-contain drop-shadow-[0_0_60px_rgba(0,0,0,0.9)] transition-all duration-500 ${spriteBottom}`}
-          alt="sprite" />
-      )}
+        {/* Sprite */}
+        {sceneData.char_image && <img src={sceneData.char_image} style={spriteStyle} alt="sprite" />}
 
-      {/* Portales de escena */}
-      {(sceneData.hotspots || []).map((hs: SceneHotspot) => (
-        <div key={hs.id}
-          style={{ left: `${hs.x}%`, top: `${hs.y}%`, position: 'absolute', transform: 'translate(-50%,-50%)' }}
-          className="z-30 group cursor-pointer"
-          onClick={() => onHotspotClick?.(hs)}>
-          <div className={`w-5 h-5 rotate-45 border-2 shadow-lg transition-all animate-pulse hover:scale-125
-            ${hs.type === 'scene' ? 'bg-purple-500/80 border-purple-300' : 'bg-[#B8955A]/80 border-yellow-300'}`} />
-          <div className="absolute left-6 -top-2 bg-[#1A1208]/90 border border-[#B8955A]/50 px-2 py-0.5 text-[8px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap text-white z-50 pointer-events-none">
-            {hs.type === 'scene' ? '🎭' : '🗺️'} {hs.label}
-            <span className="text-[#B8955A] ml-1">← portal</span>
-          </div>
-        </div>
-      ))}
-
-      {/* Cuadro de diálogo — solo visible si hay contenido, se expande con el texto */}
-      {hasDialogue && (
-        <div className="absolute bottom-0 left-0 right-0 z-20">
-          <div className="mx-auto w-[92%] max-w-3xl mb-6">
-            {/* Etiqueta de hablante */}
-            {sceneData.speaker?.trim() && (
-              <div className="inline-block bg-[#B8955A] text-[#1A1208] px-5 py-1 text-[10px] font-black uppercase tracking-[0.3em] mb-0 relative z-10 ml-6">
-                {sceneData.speaker}
-              </div>
-            )}
-            {/* Cuerpo del diálogo — max dos líneas, luego scroll interno suave */}
-            <div className="bg-[#1A1208]/94 backdrop-blur-sm border-t-4 border-[#B8955A] p-5 max-h-[40vh] overflow-y-auto custom-scrollbar">
-              <p className="text-[#D4C9B0] font-serif text-lg leading-relaxed whitespace-pre-wrap">
-                {sceneData.dialogue}
-              </p>
+        {/* Portales */}
+        {(sceneData.hotspots || []).map((hs: SceneHotspot) => (
+          <div key={hs.id}
+            style={{ left: `${hs.x}%`, top: `${hs.y}%`, position: 'absolute', transform: 'translate(-50%,-50%)' }}
+            className="z-30 group cursor-pointer"
+            onClick={() => onHotspotClick?.(hs)}>
+            <div className={`w-5 h-5 rotate-45 border-2 shadow-lg transition-all animate-pulse hover:scale-125
+              ${hs.type === 'scene' ? 'bg-purple-500/80 border-purple-300' : 'bg-[#B8955A]/80 border-yellow-300'}`} />
+            <div className="absolute left-6 -top-2 bg-[#1A1208]/90 border border-[#B8955A]/50 px-2 py-0.5 text-[8px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap text-white z-50 pointer-events-none">
+              {hs.type === 'scene' ? '🎭' : '🗺️'} {hs.label}
             </div>
           </div>
+        ))}
+
+        {/* Cuadro de diálogo */}
+        {hasDialogue && (
+          <div className="absolute bottom-0 left-0 right-0 z-20">
+            <div className="mx-auto w-[92%] max-w-3xl mb-6">
+              {sceneData.speaker?.trim() && (
+                <div className="inline-block bg-[#B8955A] text-[#1A1208] px-5 py-1 text-[10px] font-black uppercase tracking-[0.3em] ml-6">
+                  {sceneData.speaker}
+                </div>
+              )}
+              <div className="bg-[#1A1208]/94 backdrop-blur-sm border-t-4 border-[#B8955A] p-5 max-h-[35vh] overflow-y-auto custom-scrollbar">
+                <p className="text-[#D4C9B0] font-serif text-lg leading-relaxed whitespace-pre-wrap">{sceneData.dialogue}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── PANEL TIENDA LATERAL (aparece a la derecha sin tapar la escena) ── */}
+      {hasShop && (
+        <div className="w-[300px] flex-shrink-0 bg-[#1A1208]/96 border-l border-[#B8955A]/30 flex flex-col overflow-hidden shadow-2xl">
+          <div className="p-3 border-b border-[#B8955A]/20 flex justify-between items-center bg-[#B8955A]/5">
+            <h3 className="font-title text-[#B8955A] text-xs font-black uppercase italic">Comerciante</h3>
+            <span className="text-[#B8955A] font-bold text-sm">🪙 {playerGold ?? 0}</span>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+            {shopItems!.map((item: any) => {
+              const canAfford = (playerGold ?? 0) >= item.price;
+              return (
+                <div key={item.id} className={`flex items-center gap-2 p-2 border transition-all ${canAfford ? 'border-white/8 hover:border-[#B8955A]/40' : 'border-white/4 opacity-40'}`}>
+                  <span className="text-xl">{item.icon || '📦'}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[9px] font-bold text-white truncate">{item.name}</p>
+                    <p className="text-[#B8955A] text-[8px] font-mono">🪙 {item.price}</p>
+                  </div>
+                  <button onClick={() => onBuy?.(item)} disabled={!canAfford}
+                    className="bg-[#B8955A] text-black p-1.5 hover:bg-white transition-all disabled:opacity-30">
+                    <ShoppingCart size={11} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          {/* Inventario rápido para vender */}
+          {(inventory?.length ?? 0) > 0 && (
+            <div className="border-t border-white/5 p-2">
+              <p className="text-[7px] uppercase font-black text-[#B8955A]/40 mb-1.5">Tu inventario</p>
+              <div className="flex flex-wrap gap-1">
+                {inventory!.map((inv: any) => (
+                  <div key={inv.id} className="flex items-center gap-1 bg-[#251A0E] border border-white/5 px-1.5 py-0.5 group">
+                    <span className="text-xs">{inv.shop_items?.icon}</span>
+                    <span className="text-[7px] text-white/50">×{inv.quantity}</span>
+                    <button onClick={() => onSell?.(inv)} className="opacity-0 group-hover:opacity-100 text-[6px] text-[#B8955A] ml-0.5">↩</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -1124,10 +1224,10 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
   );
 
   return (
-    <div className="flex flex-col md:flex-row h-full w-full relative overflow-hidden" style={{ backgroundColor: '#0E0B07' }}>
+    <div className="flex h-full w-full relative overflow-hidden" style={{ backgroundColor: '#0E0B07' }}>
 
       {/* ── CENTRO: Visor Principal Expandido ── */}
-      <main className="flex-1 relative overflow-hidden min-h-0">
+      <main className="flex-1 relative overflow-hidden">
 
         {/* 🛡️ Botón Flotante del Operativo */}
         <div className="absolute top-4 left-4 z-[200]">
@@ -1139,7 +1239,7 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
 
         {/* 🛡️ Módulo de Estado Oculto */}
         {showSheet && (
-          <div className="absolute top-16 left-4 z-[200] w-[min(260px,calc(100vw-2rem))] max-h-[85vh] flex flex-col bg-[#1A1208]/95 backdrop-blur-md border border-[#B8955A]/30 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="absolute top-16 left-4 z-[200] w-[260px] max-h-[85vh] flex flex-col bg-[#1A1208]/95 backdrop-blur-md border border-[#B8955A]/30 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             {/* Selector de Entidad */}
             {ownedPlayers.length > 1 && (
               <div className="p-2 bg-black/60 border-b border-[#B8955A]/20">
@@ -1160,7 +1260,8 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
                 </div>
               )}
               <h2 className="font-title text-sm font-bold text-center uppercase tracking-tighter italic">{player?.name ?? '...'}</h2>
-              <div className="w-full">
+              <div className="w-full space-y-2">
+                <StatBar label="HP" value={player?.hp ?? 0} max={player?.max_hp ?? 100} color="#ef4444" />
                 <div className="flex justify-between border-b border-white/5 pb-1">
                   <span className="text-[9px] uppercase font-black opacity-40">Oro</span>
                   <span className="font-serif text-yellow-400 font-bold text-sm">🪙 {player?.gold ?? 0}</span>
@@ -1211,10 +1312,18 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
                   <p className="text-[8px] font-black uppercase text-[rgb(#B8955A/0.60)] tracking-widest flex-shrink-0">Diario</p>
                   <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 min-h-0">
                     {bio.map(entry => (
-                      <div key={entry.id} className={`p-2 border-l-2 text-[9px] font-serif leading-relaxed ${entry.is_dm ? 'border-[#B8955A] text-[rgb(#B8955A/0.80)] bg-[rgb(#B8955A/0.05)] italic' : 'border-white/20 text-[rgb(#D4C9B0/0.75)]'}`}>
-                        <span className="text-[6px] font-black uppercase opacity-40 block mb-0.5 not-italic">{entry.author}</span>
-                        {entry.content}
-                      </div>
+                      <BioEntryCard
+                        key={entry.id}
+                        entry={entry}
+                        onDelete={async (id) => {
+                          await supabase.from('biography_entries').delete().eq('id', id);
+                          setBio(prev => prev.filter(e => e.id !== id));
+                        }}
+                        onEdit={async (id, newContent) => {
+                          await supabase.from('biography_entries').update({ content: newContent }).eq('id', id);
+                          setBio(prev => prev.map(e => e.id === id ? { ...e, content: newContent } : e));
+                        }}
+                      />
                     ))}
                   </div>
                   <div className="flex-shrink-0 border-t border-white/5 pt-2 space-y-1.5">
@@ -1231,73 +1340,28 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
 
         {/* Visualización */}
         {mode === 'MAP' && <MapWithTokens map={{ image_url: data.image_url, hotspots: Array.isArray(data.hotspots) ? data.hotspots : [] }} tokens={tokens} isDM={false} onHotspotClick={handleHotspotClick} />}
-        {mode === 'SCENE' && <SceneView sceneData={data} onHotspotClick={handleHotspotClick} />}
+        {mode === 'SCENE' && (
+          <SceneView
+            sceneData={data}
+            onHotspotClick={handleHotspotClick}
+            shopItems={shopVisible}
+            onBuy={handleBuy}
+            playerGold={player?.gold}
+            inventory={inventory}
+            onSell={handleSell}
+          />
+        )}
 
-        {/* Tienda */}
+        {/* Tienda — misma SceneView con panel lateral, sin overlay */}
         {mode === 'SHOP' && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="w-full max-w-2xl h-[78%] bg-[rgb(#1A1208/0.97)] border-2 border-[rgb(#B8955A/0.50)] shadow-[0_0_60px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden">
-              <header className="p-4 border-b border-[rgb(#B8955A/0.20)] flex justify-between items-center bg-[rgb(#B8955A/0.05)] flex-shrink-0">
-                <div>
-                  <h3 className="font-title text-[#B8955A] text-sm font-black uppercase italic">Terminal de Suministros</h3>
-                  <p className="text-[8px] text-white/40 uppercase tracking-widest">Catálogo de equipo</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[8px] uppercase opacity-40 font-black">Fondos</p>
-                  <p className="text-[#B8955A] font-title font-bold text-xl">🪙 {player?.gold ?? 0}</p>
-                </div>
-              </header>
-
-              {/* Items */}
-              <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-3 custom-scrollbar">
-                {shopVisible.length === 0 && (
-                  <div className="col-span-2 text-center py-16 opacity-20">
-                    <ShoppingBag size={48} className="mx-auto mb-3" />
-                    <p className="font-serif italic">Tienda vacía</p>
-                  </div>
-                )}
-                {shopVisible.map(item => {
-                  const canAfford = (player?.gold ?? 0) >= item.price;
-                  return (
-                    <div key={item.id}
-                      className={`bg-black/40 border p-4 flex items-center gap-3 transition-all group
-                        ${canAfford ? 'border-white/8 hover:border-[#B8955A]/50' : 'border-white/4 opacity-40'}`}>
-                      <span className="text-3xl">{item.icon || '📦'}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-white uppercase truncate">{item.name}</p>
-                        <p className="text-[8px] text-white/40 font-serif italic line-clamp-1 mt-0.5">{item.description}</p>
-                        <p className="text-[#B8955A] font-mono text-xs mt-1">🪙 {item.price}</p>
-                      </div>
-                      <button onClick={() => handleBuy(item)} disabled={!canAfford}
-                        className="bg-[#B8955A] text-black p-2 hover:bg-white transition-all shadow-lg disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0">
-                        <ShoppingCart size={14} />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Inventario dentro de tienda */}
-              {inventory.length > 0 && (
-                <div className="border-t border-white/5 p-3 bg-black/30 flex-shrink-0">
-                  <p className="text-[7px] font-black uppercase text-[rgb(#B8955A/0.50)] mb-2">Tu inventario actual</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {inventory.map(inv => (
-                      <div key={inv.id}
-                        className="flex items-center gap-1 bg-[#251A0E] border border-white/8 px-2 py-1 group cursor-default">
-                        <span className="text-xs">{inv.shop_items?.icon}</span>
-                        <span className="text-[8px] text-white/60">{inv.shop_items?.name} ×{inv.quantity}</span>
-                        <button onClick={() => handleSell(inv)}
-                          className="ml-1 opacity-0 group-hover:opacity-100 text-[7px] text-[#B8955A] hover:text-white transition-all">
-                          vender
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <SceneView
+            sceneData={{ ...data, has_shop: true, hotspots: [] }}
+            shopItems={shopVisible}
+            onBuy={handleBuy}
+            playerGold={player?.gold}
+            inventory={inventory}
+            onSell={handleSell}
+          />
         )}
 
         {/* Feedback toast */}
@@ -1308,10 +1372,9 @@ function PlayerViewComponent({ playerId, view: viewProp, players, setPlayers, cu
         )}
       </main>
 
-      {/* Chat — lateral en desktop, abajo en móvil */}
-      <aside
-        className="bg-[rgb(21,13,8)] border-t border-l border-white/5 flex flex-col shadow-2xl z-20
-          h-[220px] md:h-auto md:w-[300px] flex-shrink-0">
+      {/* ── DERECHA: Chat Ampliado a 340px ── */}
+      <aside style={{ width: '340px', minWidth: '340px' }}
+        className="bg-[rgb(21,13,8)] border-l border-white/5 flex flex-col shadow-2xl z-20">
         <ChatPanel authorName={player?.name ?? 'Jugador'} isDM={false} compact />
       </aside>
     </div>
@@ -1594,7 +1657,7 @@ function MasterDashboard({ players, setPlayers }: {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold font-title truncate">{p.name}</p>
-                    <p className="text-[9px] opacity-40">🪙{p.gold}</p>
+                    <p className="text-[9px] opacity-40">❤️{p.hp} &nbsp; 🪙{p.gold}</p>
                   </div>
                   <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all">
                     <button onClick={() => setInspectingId(p.id === inspectingId ? null : p.id)}
@@ -1883,9 +1946,33 @@ function TacticalMapModule({ players, entities, broadcastToPlayer, broadcastToAl
           </div>
         </div>
 
-        <button onClick={sendMap} className="mt-auto w-full bg-[#B8955A] text-black py-3 font-black text-[10px] uppercase hover:bg-white transition-all tracking-[0.2em] shadow-lg">
-          ⬡ Sincronizar Radar
-        </button>
+        {/* Selector de jugadores — igual que en Escenas */}
+        <div className="mt-auto space-y-2">
+          <div>
+            <p className="text-[8px] font-black uppercase text-[#B8955A]/50 mb-1.5 tracking-widest">Enviar a</p>
+            <div className="flex flex-wrap gap-1">
+              <button
+                onClick={() => setSelectedPlayerIds(new Set())}
+                className={`text-[8px] px-2 py-0.5 border transition-all ${selectedPlayerIds.size === 0 ? 'border-[#B8955A] text-[#B8955A]' : 'border-white/10 text-white/30 hover:border-white/30'}`}>
+                Todos
+              </button>
+              {players.map(p => (
+                <button key={p.id}
+                  onClick={() => {
+                    const s = new Set(selectedPlayerIds);
+                    s.has(p.id) ? s.delete(p.id) : s.add(p.id);
+                    setSelectedPlayerIds(s);
+                  }}
+                  className={`text-[8px] px-2 py-0.5 border truncate transition-all ${selectedPlayerIds.has(p.id) ? 'border-[#B8955A] text-[#B8955A]' : 'border-white/10 text-white/30 hover:border-white/30'}`}>
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button onClick={sendMap} className="w-full bg-[#B8955A] text-black py-3 font-black text-[10px] uppercase hover:bg-white transition-all tracking-[0.2em] shadow-lg">
+            ⬡ Sincronizar Radar
+          </button>
+        </div>
       </aside>
 
       <div onMouseDown={() => { resizing.current = 'left'; }} className="w-1 cursor-col-resize bg-[#B8955A]/10" />
@@ -1971,10 +2058,12 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
   const [scenes, setScenes] = useSupabaseTable<SceneData>('scenes', 'created_at');
   const [shopItems] = useSupabaseTable<ShopItem>('shop_items', 'created_at');
   const [allMaps] = useSupabaseTable<MapData>('maps', 'created_at');
+  // char_position: 'left'|'center'|'right' — posición horizontal del sprite
   const [form, setForm] = useState<{
     bg_image: string; char_image: string; speaker: string; dialogue: string;
     has_shop: boolean; shop_items: string[]; hotspots: SceneHotspot[];
-  }>({ bg_image: '', char_image: '', speaker: 'Narrador', dialogue: '', has_shop: false, shop_items: [], hotspots: [] });
+    char_position: 'left' | 'center' | 'right';
+  }>({ bg_image: '', char_image: '', speaker: 'Narrador', dialogue: '', has_shop: false, shop_items: [], hotspots: [], char_position: 'center' });
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'scene' | 'shop' | 'portals'>('scene');
   const [pendingSceneHotspot, setPendingSceneHotspot] = useState<{ x: number; y: number } | null>(null);
@@ -2022,6 +2111,7 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
           speaker: targetScene.speaker, dialogue: targetScene.dialogue,
           has_shop: targetScene.has_shop, shop_items: targetScene.shop_items,
           hotspots: targetScene.hotspots || [],
+          char_position: (targetScene as any).char_position ?? 'center',
         });
       }
     }
@@ -2085,6 +2175,18 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
                 className="w-full bg-[#1A1208] border border-white/8 p-1.5 text-[9px] outline-none focus:border-[#B8955A]" placeholder="URL fondo" />
               <input value={form.char_image} onChange={e => setForm({ ...form, char_image: e.target.value })}
                 className="w-full bg-[#1A1208] border border-white/8 p-1.5 text-[9px] outline-none focus:border-[#B8955A]" placeholder="URL sprite" />
+              {/* Posición del personaje */}
+              <div>
+                <p className="text-[8px] uppercase font-black text-[#B8955A] mb-1">Posición del personaje</p>
+                <div className="flex gap-1">
+                  {(['left','center','right'] as const).map(pos => (
+                    <button key={pos} onClick={() => setForm({ ...form, char_position: pos })}
+                      className={`flex-1 py-1 text-[8px] font-black uppercase transition-all ${form.char_position === pos ? 'bg-[#B8955A] text-black' : 'border border-[#B8955A]/25 text-[#B8955A]/50 hover:border-[#B8955A]'}`}>
+                      {pos === 'left' ? '◀' : pos === 'center' ? '■' : '▶'}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <input value={form.speaker} onChange={e => setForm({ ...form, speaker: e.target.value })}
                 className="w-full bg-[#1A1208] border border-white/8 p-2 text-xs outline-none focus:border-[#B8955A]" placeholder="Hablante" />
               <textarea value={form.dialogue} onChange={e => setForm({ ...form, dialogue: e.target.value })}
@@ -2177,7 +2279,7 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
             <div className="space-y-0.5 max-h-28 overflow-y-auto custom-scrollbar">
               {scenes.map(s => (
                 <div key={s.id} className="flex items-center hover:bg-[#1A1208] group border border-transparent hover:border-[#B8955A]/20">
-                  <button onClick={() => setForm({ bg_image: s.bg_image, char_image: s.char_image, speaker: s.speaker, dialogue: s.dialogue, has_shop: s.has_shop, shop_items: s.shop_items, hotspots: s.hotspots || [] })}
+                  <button onClick={() => setForm({ bg_image: s.bg_image, char_image: s.char_image, speaker: s.speaker, dialogue: s.dialogue, has_shop: s.has_shop, shop_items: s.shop_items, hotspots: s.hotspots || [], char_position: (s as any).char_position ?? 'center' })}
                     className="flex-1 text-left text-[9px] text-white/50 p-1.5 truncate">{s.title}</button>
                   <button onClick={async () => { await (supabase.from('scenes') as any).delete().eq('id', s.id); setScenes(prev => prev.filter(sc => sc.id !== s.id)); }}
                     className="px-2 opacity-0 group-hover:opacity-100 text-red-500/60 hover:text-red-500"><Trash2 size={11} /></button>
@@ -2198,11 +2300,21 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
         style={{ cursor: activeTab === 'portals' ? 'crosshair' : 'default' }}>
         <div className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: form.bg_image ? `url(${form.bg_image})` : 'none', filter: 'brightness(0.65)' }} />
-        {form.char_image && (
-          <img src={form.char_image}
-            className={`absolute left-1/2 -translate-x-1/2 h-[72%] object-contain drop-shadow-[0_0_60px_rgba(0,0,0,0.9)] transition-all ${(form.speaker || form.dialogue) ? 'bottom-[160px]' : 'bottom-4'}`}
-            alt="sprite" />
-        )}
+        {form.char_image && (() => {
+          const pos = form.char_position ?? 'center';
+          const style: React.CSSProperties = {
+            position: 'absolute',
+            bottom: (form.speaker || form.dialogue) ? '160px' : '16px',
+            height: '72%',
+            objectFit: 'contain' as const,
+            filter: 'drop-shadow(0 0 60px rgba(0,0,0,0.9))',
+            transition: 'all 0.3s',
+            ...(pos === 'left'  ? { left: '8%', transform: 'none' } :
+               pos === 'right' ? { right: '8%', transform: 'none' } :
+               { left: '50%', transform: 'translateX(-50%)' }),
+          };
+          return <img src={form.char_image} style={style} alt="sprite" />;
+        })()}
         {form.hotspots.map(hs => (
           <div key={hs.id}
             style={{ left: `${hs.x}%`, top: `${hs.y}%`, position: 'absolute', transform: 'translate(-50%,-50%)' }}
