@@ -354,16 +354,17 @@ async function navigatePlayer(
 function LoginScreen({ onLogin }: { onLogin: (user: UserAccount, isDM: boolean) => void }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [isDMMode, setIsDMMode] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const DM_PASSWORD = 'master2024'; // contraseña fija del DM
+  const DM_PASSWORD = 'master2024';
 
   const handle = async () => {
-    if (!username.trim() || !password.trim()) { setError('Rellena todos los campos'); return; }
+    if (!password.trim()) { setError('Introduce una contraseña'); return; }
     setLoading(true); setError('');
 
-    // ¿Es el DM?
-    if (username.toLowerCase() === 'dm' || username.toLowerCase() === 'master') {
+    // ── MODO DM ────────────────────────────────────────────────────────
+    if (isDMMode) {
       if (password === DM_PASSWORD) {
         onLogin({ id: 'dm', username: 'DM', created_at: '' }, true);
       } else {
@@ -372,12 +373,13 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserAccount, isDM: boolean) 
       setLoading(false); return;
     }
 
-    // Buscar usuario existente
+    // ── MODO JUGADOR ───────────────────────────────────────────────────
+    if (!username.trim()) { setError('Introduce un nombre de usuario'); setLoading(false); return; }
+
     const { data: existing } = await (supabase.from('users') as any)
       .select('*').eq('username', username.trim()).single();
 
     if (existing) {
-      // Login: verificar contraseña (hash simple con btoa)
       const hash = btoa(password + existing.id.slice(0, 8));
       if (existing.password_hash === hash) {
         onLogin(existing as UserAccount, false);
@@ -385,7 +387,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserAccount, isDM: boolean) 
         setError('Contraseña incorrecta');
       }
     } else {
-      // Registro: crear cuenta nueva
+      // Registro nuevo
       const tempId = Math.random().toString(36).slice(2);
       const hash = btoa(password + tempId.slice(0, 8));
       const { data: created, error: err } = await (supabase.from('users') as any)
@@ -393,7 +395,6 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserAccount, isDM: boolean) 
         .select().single();
       if (err) { setError('Error al crear cuenta'); }
       else {
-        // Recalcular hash con el ID real
         const realHash = btoa(password + (created as any).id.slice(0, 8));
         await (supabase.from('users') as any)
           .update({ password_hash: realHash }).eq('id', (created as any).id);
@@ -405,49 +406,75 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserAccount, isDM: boolean) 
 
   return (
     <div className="h-screen w-screen bg-[#0E0B07] flex items-center justify-center">
-
-      <div className="w-full max-w-sm px-8 py-10 bg-[#1A1208] border border-[rgb(#B8955A/0.30)] shadow-[0_0_60px_rgba(0,0,0,0.8)] flex flex-col items-center gap-6">
+      <div className="w-full max-w-sm px-8 py-10 bg-[#1A1208] border border-[#B8955A]/30 shadow-[0_0_60px_rgba(0,0,0,0.8)] flex flex-col items-center gap-6">
         <div className="text-center">
           <h1 className="font-display text-3xl font-black text-[#B8955A] tracking-tight">VELLUM</h1>
-          <p className="text-[9px] font-title uppercase tracking-[0.4em] text-[rgb(#B8955A/0.40)] mt-1">Virtual Tabletop</p>
+          <p className="text-[9px] font-title uppercase tracking-[0.4em] text-[#B8955A]/40 mt-1">Virtual Tabletop</p>
+        </div>
+
+        {/* Toggle DM / Jugador */}
+        <div className="flex w-full border border-[#B8955A]/20 overflow-hidden">
+          <button
+            onClick={() => { setIsDMMode(false); setError(''); }}
+            className={`flex-1 py-2 text-[9px] font-black uppercase transition-all ${!isDMMode ? 'bg-[#B8955A] text-black' : 'text-white/30 hover:text-white/60'}`}>
+            <User size={11} className="inline mr-1" /> Jugador
+          </button>
+          <button
+            onClick={() => { setIsDMMode(true); setError(''); }}
+            className={`flex-1 py-2 text-[9px] font-black uppercase transition-all ${isDMMode ? 'bg-[#B8955A] text-black' : 'text-white/30 hover:text-white/60'}`}>
+            <Settings size={11} className="inline mr-1" /> Dungeon Master
+          </button>
         </div>
 
         <div className="w-full space-y-3">
+          {/* Solo jugadores necesitan nombre */}
+          {!isDMMode && (
+            <div>
+              <label className="text-[8px] font-black uppercase text-[#B8955A]/60 tracking-widest block mb-1">
+                Nombre de usuario
+              </label>
+              <input
+                value={username} onChange={e => setUsername(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handle()}
+                autoFocus
+                className="w-full bg-[#251A0E] border border-[#B8955A]/20 px-3 py-2.5 text-sm outline-none focus:border-[#B8955A] text-[#D4C9B0] placeholder-white/20"
+                placeholder="Tu nombre..."
+              />
+            </div>
+          )}
           <div>
-            <label className="text-[8px] font-black uppercase text-[rgb(#B8955A/0.60)] tracking-widest block mb-1">Nombre de usuario</label>
-            <input
-              value={username} onChange={e => setUsername(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handle()}
-              placeholder="Tu nombre..."
-              className="w-full bg-[#251A0E] border border-white/10 px-3 py-2 text-sm font-serif text-[#D4C9B0] outline-none focus:border-[rgb(#B8955A/0.60)] placeholder-white/20"
-            />
-          </div>
-          <div>
-            <label className="text-[8px] font-black uppercase text-[rgb(#B8955A/0.60)] tracking-widest block mb-1">Contraseña</label>
+            <label className="text-[8px] font-black uppercase text-[#B8955A]/60 tracking-widest block mb-1">
+              {isDMMode ? 'Contraseña maestra' : 'Contraseña'}
+            </label>
             <input
               type="password" value={password} onChange={e => setPassword(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handle()}
+              autoFocus={isDMMode}
+              className="w-full bg-[#251A0E] border border-[#B8955A]/20 px-3 py-2.5 text-sm outline-none focus:border-[#B8955A] text-[#D4C9B0] placeholder-white/20"
               placeholder="••••••••"
-              className="w-full bg-[#251A0E] border border-white/10 px-3 py-2 text-sm font-serif text-[#D4C9B0] outline-none focus:border-[rgb(#B8955A/0.60)] placeholder-white/20"
             />
           </div>
         </div>
 
-        {error && <p className="text-red-400 text-[10px] font-black uppercase tracking-wide">{error}</p>}
+        {error && (
+          <p className="text-red-400 text-[9px] font-black uppercase tracking-wide">{error}</p>
+        )}
 
         <button onClick={handle} disabled={loading}
-          className="w-full py-3 bg-[#B8955A] text-[#1A1208] font-black text-xs uppercase tracking-widest hover:bg-white transition-all disabled:opacity-40">
-          {loading ? 'Accediendo...' : 'Entrar al mundo'}
+          className="w-full py-3 bg-[#B8955A] text-black font-black uppercase text-[10px] tracking-[0.3em] hover:bg-white transition-all disabled:opacity-40">
+          {loading ? 'Verificando...' : isDMMode ? 'Entrar como DM' : 'Entrar / Registrarse'}
         </button>
 
-        <p className="text-[8px] text-white/20 text-center font-serif italic">
-          Si el nombre no existe, se creará tu cuenta.<br/>
-          Para acceder como DM usa "dm" / "master2024"
-        </p>
+        {!isDMMode && (
+          <p className="text-[8px] text-white/20 text-center font-serif italic">
+            Si es tu primera vez, se creará una cuenta automáticamente.
+          </p>
+        )}
       </div>
     </div>
   );
 }
+
 
 // ─── PANEL DE PERSONAJES DEL USUARIO ──────────────────────────────────────────
 
@@ -991,8 +1018,8 @@ function SceneView({ sceneData, onHotspotClick, shopItems, onBuy, playerGold, in
 
   return (
     <div className="absolute inset-0 flex overflow-hidden">
-      {/* Área escena — ocupa todo o 60% si hay tienda lateral */}
-      <div className={`relative overflow-hidden ${hasShop ? 'flex-1' : 'absolute inset-0'}`}>
+      {/* Área escena — siempre flex-1, ocupa todo el espacio disponible */}
+      <div className="relative flex-1 overflow-hidden">
         {/* Fondo */}
         <div className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: sceneData.bg_image ? `url(${sceneData.bg_image})` : 'none', filter: 'brightness(0.65)' }} />
