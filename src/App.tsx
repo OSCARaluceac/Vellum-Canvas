@@ -41,7 +41,7 @@ interface SceneData {
 }
 interface SceneHotspot {
   id: string; x: number; y: number; label: string;
-  targetMapId?: string; targetSceneId?: string; type: 'map' | 'scene';
+  targetMapId?: string; targetSceneId?: string; type: 'map' | 'scene' | 'shop';
 }
 interface ShopItem {
   id: string; name: string; description: string; price: number;
@@ -800,7 +800,7 @@ function MapWithTokens({
             <div className={`w-5 h-5 rotate-45 border-2 shadow-lg transition-all hover:scale-125 animate-pulse
               ${hs.type === 'scene' ? 'bg-purple-600 border-purple-300' : 'bg-[#B8955A] border-white'}`} />
             <div className="absolute left-6 -top-2 bg-[#1A1208]/95 border border-[#B8955A]/40 px-2 py-1 text-[9px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap text-white z-50 pointer-events-none">
-              {hs.type === 'scene' ? '🎭' : '🗺️'} {hs.label}
+              {hs.type === 'scene' ? '🎭' : hs.type === 'shop' ? '🛒' : '🗺️'} {hs.label}
             </div>
           </div>
         ))}
@@ -995,15 +995,26 @@ function PlayerSelector({ players, selectedId, onSelect }: {
 
 function SceneView({ sceneData, onHotspotClick, shopItems, onBuy, playerGold, inventory, onSell }: {
   sceneData: any; onHotspotClick?: (hs: any) => void;
-  // Props opcionales para tienda lateral integrada
   shopItems?: any[]; onBuy?: (item: any) => void;
   playerGold?: number; inventory?: any[]; onSell?: (inv: any) => void;
 }) {
+  // La tienda puede abrirse por: modo SHOP del DM, o por tocar un hotspot tipo 'shop'
+  const [shopOpenByHotspot, setShopOpenByHotspot] = useState(false);
   const hasDialogue = sceneData.speaker?.trim() || sceneData.dialogue?.trim();
-  const hasShop = sceneData.has_shop && shopItems && shopItems.length > 0;
+  const hasShop = (sceneData.has_shop || shopOpenByHotspot) && shopItems && shopItems.length > 0;
   const pos = sceneData.char_position ?? 'center';
 
-  // Posición horizontal del sprite
+  const handleHotspot = (hs: SceneHotspot) => {
+    if (hs.type === 'shop') {
+      setShopOpenByHotspot(prev => !prev); // toggle tienda
+    } else {
+      onHotspotClick?.(hs);
+    }
+  };
+
+  // Cuando hay tienda lateral, el sprite se mueve a la izquierda
+  // para no quedar tapado por el panel de 300px.
+  const effectivePos = hasShop && pos === 'center' ? 'left' : pos;
   const spriteStyle: React.CSSProperties = {
     position: 'absolute',
     bottom: hasDialogue ? '160px' : '16px',
@@ -1011,8 +1022,8 @@ function SceneView({ sceneData, onHotspotClick, shopItems, onBuy, playerGold, in
     objectFit: 'contain' as const,
     filter: 'drop-shadow(0 0 60px rgba(0,0,0,0.9))',
     transition: 'all 0.5s',
-    ...(pos === 'left'   ? { left: '8%',  transform: 'none' } :
-       pos === 'right'  ? { right: '8%', transform: 'none' } :
+    ...(effectivePos === 'left'  ? { left: '8%',  transform: 'none' } :
+       effectivePos === 'right' ? { right: '8%', transform: 'none' } :
        { left: '50%', transform: 'translateX(-50%)' }),
   };
 
@@ -1032,11 +1043,11 @@ function SceneView({ sceneData, onHotspotClick, shopItems, onBuy, playerGold, in
           <div key={hs.id}
             style={{ left: `${hs.x}%`, top: `${hs.y}%`, position: 'absolute', transform: 'translate(-50%,-50%)' }}
             className="z-30 group cursor-pointer"
-            onClick={() => onHotspotClick?.(hs)}>
+            onClick={() => handleHotspot(hs)}>
             <div className={`w-5 h-5 rotate-45 border-2 shadow-lg transition-all animate-pulse hover:scale-125
-              ${hs.type === 'scene' ? 'bg-purple-500/80 border-purple-300' : 'bg-[#B8955A]/80 border-yellow-300'}`} />
+              ${hs.type === 'scene' ? 'bg-purple-500/80 border-purple-300' : hs.type === 'shop' ? 'bg-green-600/80 border-green-300' : 'bg-[#B8955A]/80 border-yellow-300'}`} />
             <div className="absolute left-6 -top-2 bg-[#1A1208]/90 border border-[#B8955A]/50 px-2 py-0.5 text-[8px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap text-white z-50 pointer-events-none">
-              {hs.type === 'scene' ? '🎭' : '🗺️'} {hs.label}
+              {hs.type === 'scene' ? '🎭' : hs.type === 'shop' ? '🛒' : '🗺️'} {hs.label}
             </div>
           </div>
         ))}
@@ -2094,7 +2105,7 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'scene' | 'shop' | 'portals'>('scene');
   const [pendingSceneHotspot, setPendingSceneHotspot] = useState<{ x: number; y: number } | null>(null);
-  const [sceneHotspotForm, setSceneHotspotForm] = useState({ label: '', targetMapId: '', targetSceneId: '', type: 'scene' as 'map' | 'scene' });
+  const [sceneHotspotForm, setSceneHotspotForm] = useState({ label: '', targetMapId: '', targetSceneId: '', type: 'scene' as 'map' | 'scene' | 'shop' });
   const sceneRef = useRef<HTMLDivElement>(null);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>, key: string) => {
@@ -2240,7 +2251,7 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
               <p className="text-[8px] text-white/30 italic">Clic en la vista previa para colocar portales. Los jugadores los verán y podrán cruzarlos de forma autónoma.</p>
               {form.hotspots.map(hs => (
                 <div key={hs.id} className="flex items-center gap-2 bg-[#1A1208] border border-white/5 p-2">
-                  <span className="text-[9px] flex-1">{hs.type === 'scene' ? '🎭' : '🗺️'} {hs.label}</span>
+                  <span className="text-[9px] flex-1">{hs.type === 'scene' ? '🎭' : hs.type === 'shop' ? '🛒' : '🗺️'} {hs.label}</span>
                   <button onClick={() => setForm({ ...form, hotspots: form.hotspots.filter(h => h.id !== hs.id) })} className="text-red-500/50 hover:text-red-500"><X size={11} /></button>
                 </div>
               ))}
@@ -2251,8 +2262,9 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
                     placeholder="Etiqueta..." className="w-full bg-[#251A0E] border border-white/10 p-1.5 text-[9px] outline-none focus:border-[#B8955A]" />
                   <select value={sceneHotspotForm.type} onChange={e => setSceneHotspotForm({ ...sceneHotspotForm, type: e.target.value as any })}
                     className="w-full bg-[#251A0E] border border-white/10 p-1.5 text-[9px] outline-none text-[#D4C9B0]">
-                    <option value="scene">→ Escena</option>
-                    <option value="map">→ Mapa</option>
+                    <option value="scene">🎭 → Escena</option>
+                    <option value="map">🗺️ → Mapa</option>
+                    <option value="shop">🛒 → Abrir Tienda</option>
                   </select>
                   {sceneHotspotForm.type === 'map' ? (
                     <select value={sceneHotspotForm.targetMapId} onChange={e => setSceneHotspotForm({ ...sceneHotspotForm, targetMapId: e.target.value })}
@@ -2350,7 +2362,7 @@ function ScenesModule({ players, broadcastToPlayer, broadcastToAll }: {
             <div className={`w-5 h-5 rotate-45 border-2 animate-pulse transition-all hover:scale-125
               ${hs.type === 'scene' ? 'bg-purple-500/80 border-purple-300' : 'bg-[#B8955A]/80 border-yellow-300'}`} />
             <div className="absolute left-6 -top-2 bg-[#1A1208]/90 border border-[#B8955A]/50 px-2 py-0.5 text-[8px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap text-white z-50 pointer-events-none">
-              {hs.type === 'scene' ? '🎭' : '🗺️'} {hs.label}
+              {hs.type === 'scene' ? '🎭' : hs.type === 'shop' ? '🛒' : '🗺️'} {hs.label}
             </div>
           </div>
         ))}
